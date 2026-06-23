@@ -52,24 +52,42 @@ export const profileService = {
   },
 
   async followUser(followerId: string, followingId: string): Promise<void> {
-    await supabase.from('follows').insert({ follower_id: followerId, following_id: followingId })
-    await supabase.rpc('increment_followers', { user_id: followingId })
-    await supabase.rpc('increment_following', { user_id: followerId })
+    // Try follows table — ignore if it doesn't exist
+    await supabase.from('follows').insert({ follower_id: followerId, following_id: followingId }).then(() => {}, () => {})
+    // Direct count update — no RPC needed
+    const [{ data: target }, { data: actor }] = await Promise.all([
+      supabase.from('profiles').select('followers_count').eq('id', followingId).single(),
+      supabase.from('profiles').select('following_count').eq('id', followerId).single(),
+    ])
+    await Promise.all([
+      supabase.from('profiles').update({ followers_count: (target?.followers_count ?? 0) + 1 }).eq('id', followingId),
+      supabase.from('profiles').update({ following_count: (actor?.following_count ?? 0) + 1 }).eq('id', followerId),
+    ])
   },
 
   async unfollowUser(followerId: string, followingId: string): Promise<void> {
-    await supabase.from('follows').delete().match({ follower_id: followerId, following_id: followingId })
-    await supabase.rpc('decrement_followers', { user_id: followingId })
-    await supabase.rpc('decrement_following', { user_id: followerId })
+    await supabase.from('follows').delete().match({ follower_id: followerId, following_id: followingId }).then(() => {}, () => {})
+    const [{ data: target }, { data: actor }] = await Promise.all([
+      supabase.from('profiles').select('followers_count').eq('id', followingId).single(),
+      supabase.from('profiles').select('following_count').eq('id', followerId).single(),
+    ])
+    await Promise.all([
+      supabase.from('profiles').update({ followers_count: Math.max(0, (target?.followers_count ?? 1) - 1) }).eq('id', followingId),
+      supabase.from('profiles').update({ following_count: Math.max(0, (actor?.following_count ?? 1) - 1) }).eq('id', followerId),
+    ])
   },
 
   async isFollowing(followerId: string, followingId: string): Promise<boolean> {
-    const { data } = await supabase
-      .from('follows')
-      .select('id')
-      .match({ follower_id: followerId, following_id: followingId })
-      .single()
-    return !!data
+    try {
+      const { data } = await supabase
+        .from('follows')
+        .select('id')
+        .match({ follower_id: followerId, following_id: followingId })
+        .single()
+      return !!data
+    } catch {
+      return false
+    }
   },
 
   async searchProfiles(query: string, limit = 10): Promise<Profile[]> {

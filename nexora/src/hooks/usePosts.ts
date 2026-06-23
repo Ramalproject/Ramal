@@ -73,6 +73,15 @@ export function useDeletePost() {
   })
 }
 
+export function useEditPost() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ postId, content }: { postId: string; content: string }) =>
+      postService.update(postId, content),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['posts'] })
+  })
+}
+
 export function useSearchPosts(query: string) {
   return useQuery({
     queryKey: ['posts', 'search', query],

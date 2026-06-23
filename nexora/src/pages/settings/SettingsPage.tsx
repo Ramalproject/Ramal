@@ -20,6 +20,8 @@ export default function SettingsPage() {
   const [website, setWebsite] = useState(profile?.website ?? '')
   const [location, setLocation] = useState(profile?.location ?? '')
   const [saving, setSaving] = useState(false)
+  const [isPrivate, setIsPrivate] = useState((profile as { is_private?: boolean } | null)?.is_private ?? false)
+  const [savingPrivacy, setSavingPrivacy] = useState(false)
   const [openaiKey, setOpenaiKey] = useState(() => localStorage.getItem(OPENAI_KEY_STORAGE) ?? '')
 
   async function saveProfile() {
@@ -34,6 +36,20 @@ export default function SettingsPage() {
       notifications.show({ title: 'Error', message: 'Failed to save profile', color: 'red' })
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function savePrivacy() {
+    if (!user) return
+    setSavingPrivacy(true)
+    try {
+      const updated = await profileService.update(user.id, { is_private: isPrivate } as Parameters<typeof profileService.update>[1])
+      setProfile(updated)
+      notifications.show({ title: 'Privacy updated', message: isPrivate ? 'Your account is now Private' : 'Your account is now Public', color: 'violet' })
+    } catch {
+      notifications.show({ title: 'Error', message: 'Failed to save privacy setting', color: 'red' })
+    } finally {
+      setSavingPrivacy(false)
     }
   }
 
@@ -88,7 +104,26 @@ export default function SettingsPage() {
               <PasswordInput label="Confirm Password" placeholder="Confirm new password"
                 styles={{ label: labelStyle, input: inputStyle }} />
               <Button variant="outline" color="violet">Update Password</Button>
-              <Paper p="md" mt="xl" style={{ background: '#1a0a0a', border: '1px solid #3a1a1a', borderRadius: 8 }}>
+              {/* Privacy */}
+              <Paper p="md" style={{ background: '#0a0a1e', border: '1px solid #2d2d4e', borderRadius: 8 }}>
+                <Text c="white" fw={600} mb={4}>Account Privacy</Text>
+                <Text c="dimmed" size="xs" mb="md">Control who can see your posts and profile</Text>
+                <Group justify="space-between" align="center" mb="sm">
+                  <Box>
+                    <Text size="sm" c="white" fw={500}>{isPrivate ? '🔒 Private Account' : '🌐 Public Account'}</Text>
+                    <Text size="xs" c="dimmed">
+                      {isPrivate ? 'Only approved followers can see your posts' : 'Anyone can see your posts and profile'}
+                    </Text>
+                  </Box>
+                  <Switch checked={isPrivate} onChange={e => setIsPrivate(e.currentTarget.checked)} color="violet" size="md" />
+                </Group>
+                <Button size="xs" onClick={savePrivacy} loading={savingPrivacy}
+                  style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>
+                  Save Privacy
+                </Button>
+              </Paper>
+
+              <Paper p="md" mt="md" style={{ background: '#1a0a0a', border: '1px solid #3a1a1a', borderRadius: 8 }}>
                 <Text c="red" fw={600} mb="sm">Danger Zone</Text>
                 <Text c="dimmed" size="sm" mb="sm">
                   Permanently delete your account and all data. This cannot be undone.

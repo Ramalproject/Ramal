@@ -59,6 +59,14 @@ export const postService = {
     return data as Post
   },
 
+  async update(postId: string, content: string): Promise<void> {
+    const { error } = await supabase
+      .from('posts')
+      .update({ content, updated_at: new Date().toISOString() })
+      .eq('id', postId)
+    if (error) throw error
+  },
+
   async delete(postId: string): Promise<void> {
     const { error } = await supabase.from('posts').delete().eq('id', postId)
     if (error) throw error
@@ -66,12 +74,14 @@ export const postService = {
 
   async likePost(postId: string, userId: string): Promise<void> {
     await supabase.from('likes').insert({ post_id: postId, user_id: userId })
-    await supabase.rpc('increment_likes', { post_id: postId })
+    const { data } = await supabase.from('posts').select('likes_count').eq('id', postId).single()
+    await supabase.from('posts').update({ likes_count: (data?.likes_count ?? 0) + 1 }).eq('id', postId)
   },
 
   async unlikePost(postId: string, userId: string): Promise<void> {
     await supabase.from('likes').delete().match({ post_id: postId, user_id: userId })
-    await supabase.rpc('decrement_likes', { post_id: postId })
+    const { data } = await supabase.from('posts').select('likes_count').eq('id', postId).single()
+    await supabase.from('posts').update({ likes_count: Math.max(0, (data?.likes_count ?? 1) - 1) }).eq('id', postId)
   },
 
   async search(query: string, limit = 20): Promise<Post[]> {
