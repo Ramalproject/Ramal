@@ -117,7 +117,38 @@ CREATE POLICY "notif_update" ON notifications FOR UPDATE USING (user_id = auth.u
 DO $$ BEGIN
   ALTER PUBLICATION supabase_realtime ADD TABLE room_participants;
 EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;`
+END $$;
+
+-- Step 8: Comments table RLS
+ALTER TABLE IF EXISTS comments ENABLE ROW LEVEL SECURITY;
+DO $$
+DECLARE pol RECORD;
+BEGIN
+  FOR pol IN SELECT policyname FROM pg_policies WHERE schemaname='public' AND tablename='comments'
+  LOOP EXECUTE format('DROP POLICY IF EXISTS %I ON public.comments', pol.policyname); END LOOP;
+END $$;
+CREATE POLICY "comments_select" ON comments FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "comments_insert" ON comments FOR INSERT WITH CHECK (user_id = auth.uid());
+CREATE POLICY "comments_delete" ON comments FOR DELETE USING (user_id = auth.uid());
+
+-- Step 9: Posts, likes, bookmarks RLS
+ALTER TABLE IF EXISTS posts      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS post_likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS bookmarks  ENABLE ROW LEVEL SECURITY;
+DO $$
+DECLARE pol RECORD;
+BEGIN
+  FOR pol IN SELECT policyname, tablename FROM pg_policies WHERE schemaname='public' AND tablename IN ('posts','post_likes','bookmarks')
+  LOOP EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', pol.policyname, pol.tablename); END LOOP;
+END $$;
+CREATE POLICY "posts_select"   ON posts       FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "posts_insert"   ON posts       FOR INSERT WITH CHECK (author_id = auth.uid());
+CREATE POLICY "posts_update"   ON posts       FOR UPDATE USING (author_id = auth.uid());
+CREATE POLICY "posts_delete"   ON posts       FOR DELETE USING (author_id = auth.uid());
+CREATE POLICY "likes_all"      ON post_likes  FOR ALL    USING (user_id = auth.uid());
+CREATE POLICY "likes_select"   ON post_likes  FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "bookmarks_all"  ON bookmarks   FOR ALL    USING (user_id = auth.uid());
+CREATE POLICY "bookmarks_sel"  ON bookmarks   FOR SELECT USING (auth.uid() IS NOT NULL);`
 
 export default function SettingsPage() {
   const { profile, user, setProfile } = useAuthStore()

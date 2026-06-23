@@ -87,28 +87,33 @@ export const messageService = {
       (profileRows ?? []).map(p => [p.id, p as Profile])
     )
 
-    // Step 4: room timestamps
-    const { data: rooms } = await supabase
+    // Step 4: room timestamps (best-effort — if message_rooms RLS blocks, fall back to roomIds)
+    const { data: roomsData } = await supabase
       .from('message_rooms')
       .select('id, created_at, updated_at')
       .in('id', roomIds)
       .order('updated_at', { ascending: false })
 
-    if (!rooms) return []
+    // Use roomsData if available, otherwise build stubs from known roomIds
+    const orderedIds = roomsData?.length ? roomsData.map(r => r.id) : roomIds
+    const tsMap = Object.fromEntries(
+      (roomsData ?? []).map(r => [r.id, { created_at: r.created_at, updated_at: r.updated_at }])
+    )
 
     // Step 5: enrich each room
-    const enriched = await Promise.all(rooms.map(async room => {
-      const lastReadAt = lastReadMap[room.id] ?? new Date(0).toISOString()
+    const enriched = await Promise.all(orderedIds.map(async roomId => {
+      const ts = tsMap[roomId] ?? { created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+      const lastReadAt = lastReadMap[roomId] ?? new Date(0).toISOString()
 
       const participants = otherRows
-        .filter(r => r.room_id === room.id)
+        .filter(r => r.room_id === roomId)
         .map(r => profileMap[r.user_id])
         .filter(Boolean) as Profile[]
 
       const { data: lastMsg } = await supabase
         .from('messages')
         .select('*, sender:profiles!sender_id(*)')
-        .eq('room_id', room.id)
+        .eq('room_id', roomId)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -117,22 +122,22 @@ export const messageService = {
       const { count: unread } = await supabase
         .from('messages')
         .select('id', { count: 'exact', head: true })
-        .eq('room_id', room.id)
+        .eq('room_id', roomId)
         .neq('sender_id', userId)
         .gt('created_at', lastReadAt)
         .eq('is_deleted', false)
 
       return {
-        id: room.id,
-        created_at: room.created_at,
-        updated_at: room.updated_at,
+        id: roomId,
+        created_at: ts.created_at,
+        updated_at: ts.updated_at,
         participants,
         last_message: lastMsg as Message | undefined,
         unread_count: unread ?? 0,
       } as Room
     }))
 
-    return enriched
+    return enriched.filter(r => (r.participants?.length ?? 0) > 0 || enriched.length === 1)
   },
 
   async getOrCreateRoom(userId1: string, userId2: string): Promise<string> {
