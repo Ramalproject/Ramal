@@ -46,6 +46,9 @@ export default function AIConversationPage() {
 
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([])
   const [liveText, setLiveText] = useState('')
+  const [textMode, setTextMode] = useState(false)
+  const [textInput, setTextInput] = useState('')
+  const textInputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Web Audio for volume
@@ -108,6 +111,13 @@ export default function AIConversationPage() {
     stopVolumeLoop()
   }, [stopVolumeLoop])
 
+  // After AI finishes speaking — resume listening or re-focus text input
+  const resumeListening = useCallback(() => {
+    state.startListening()
+    startListeningRef.current()
+    if (textMode) setTimeout(() => textInputRef.current?.focus(), 100)
+  }, [state, textMode])
+
   // TTS via OpenAI
   const speak = useCallback(async (text: string) => {
     const apiKey = localStorage.getItem(OPENAI_KEY_STORAGE)
@@ -115,8 +125,7 @@ export default function AIConversationPage() {
       state.startSpeaking()
       setTimeout(() => {
         state.stopSpeaking()
-        state.startListening()
-        startListeningRef.current()
+        resumeListening()
       }, 2200)
       return
     }
@@ -133,17 +142,15 @@ export default function AIConversationPage() {
       const audio = new Audio(url)
       audio.onended = () => {
         state.stopSpeaking()
-        state.startListening()
-        startListeningRef.current()
+        resumeListening()
         URL.revokeObjectURL(url)
       }
       audio.play()
     } catch (_) {
       state.stopSpeaking()
-      state.startListening()
-      startListeningRef.current()
+      resumeListening()
     }
-  }, [state])
+  }, [state, resumeListening])
 
   // Chat with OpenAI
   const chat = useCallback(async (userText: string) => {
@@ -187,12 +194,20 @@ export default function AIConversationPage() {
   const startListening = useCallback(() => {
     const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
     if (!SR) {
-      // Fallback: no SpeechRecognition — just stay in listening state briefly then go back to idle
-      setTimeout(() => state.stopSpeaking(), 800)
+      // No SpeechRecognition — activate text input mode and stay in listening phase
+      setTextMode(true)
+      setTimeout(() => textInputRef.current?.focus(), 100)
       return
     }
 
-    const recog = new SR()
+    let recog: any
+    try {
+      recog = new SR()
+    } catch {
+      setTextMode(true)
+      setTimeout(() => textInputRef.current?.focus(), 100)
+      return
+    }
     recogRef.current = recog
     recog.continuous = false
     recog.interimResults = true
@@ -205,7 +220,9 @@ export default function AIConversationPage() {
     }
     recog.onerror = () => {
       setLiveText('')
-      state.stopSpeaking()
+      // Fall back to text input rather than resetting entirely
+      setTextMode(true)
+      setTimeout(() => textInputRef.current?.focus(), 100)
     }
     recog.onend = () => {
       const final = liveTextRef.current.trim()
@@ -213,15 +230,28 @@ export default function AIConversationPage() {
       if (final) {
         setTranscript(prev => [...prev, { role: 'user', text: final, id: Date.now().toString() }])
         chat(final)
-      } else {
-        state.stopSpeaking()
+      } else if (!textMode) {
+        // No speech detected — restart listening automatically
+        setTimeout(() => startListeningRef.current(), 300)
       }
     }
-    recog.start()
-  }, [state, chat])
+    try { recog.start() } catch {
+      setTextMode(true)
+      setTimeout(() => textInputRef.current?.focus(), 100)
+    }
+  }, [state, chat, textMode])
 
   // Keep ref current so speak() always calls latest startListening
   useEffect(() => { startListeningRef.current = startListening }, [startListening])
+
+  // Submit typed text as if spoken
+  const handleTextSubmit = useCallback(() => {
+    const text = textInput.trim()
+    if (!text || state.phase === 'thinking' || state.phase === 'speaking') return
+    setTextInput('')
+    setTranscript(prev => [...prev, { role: 'user', text, id: Date.now().toString() }])
+    chat(text)
+  }, [textInput, state.phase, chat])
 
   const handlePrimary = useCallback(() => {
     if (state.phase === 'idle') {
@@ -229,12 +259,16 @@ export default function AIConversationPage() {
       startMic()
       startListening()
     } else if (state.phase === 'listening') {
-      recogRef.current?.stop()
+      if (textMode) {
+        handleTextSubmit()
+      } else {
+        recogRef.current?.stop()
+      }
     } else if (state.phase === 'speaking') {
       recogRef.current?.stop()
       state.setThinking()
     }
-  }, [state, startMic, startListening])
+  }, [state, startMic, startListening, textMode, handleTextSubmit])
 
   const handleEndCall = useCallback(() => {
     recogRef.current?.stop()
@@ -295,7 +329,11 @@ export default function AIConversationPage() {
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}
         >
           <AIAvatar phase={state.phase} avatarUrl={avatarUrl} volume={state.volume} />
-          <StatusIndicator phase={state.phase} twinName={twinName} />
+          <StatusIndicator
+            phase={state.phase}
+            twinName={twinName}
+            statusOverride={textMode && state.phase === 'listening' ? 'Type your message below' : undefined}
+          />
         </motion.div>
 
         {/* Voice visualizer */}
@@ -379,6 +417,64 @@ export default function AIConversationPage() {
         </div>
       </div>
 
+      {/* Text input bar — shown when SpeechRecognition is unavailable */}
+      <AnimatePresence>
+        {textMode && state.phase !== 'idle' && state.phase !== 'ended' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            style={{
+              position: 'relative', zIndex: 11,
+              padding: '10px 20px 0',
+              display: 'flex', gap: 8, alignItems: 'center',
+            }}
+          >
+            <div style={{ flex: 1, position: 'relative' }}>
+              <input
+                ref={textInputRef}
+                type="text"
+                placeholder={state.phase === 'thinking' || state.phase === 'speaking' ? 'AI is responding...' : 'Type your message…'}
+                value={textInput}
+                onChange={e => setTextInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleTextSubmit() }}
+                disabled={state.phase === 'thinking' || state.phase === 'speaking'}
+                style={{
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(124,58,237,0.4)',
+                  borderRadius: 24,
+                  padding: '11px 18px',
+                  color: '#fff',
+                  fontSize: 14,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  opacity: (state.phase === 'thinking' || state.phase === 'speaking') ? 0.5 : 1,
+                }}
+              />
+            </div>
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              onClick={handleTextSubmit}
+              disabled={!textInput.trim() || state.phase === 'thinking' || state.phase === 'speaking'}
+              style={{
+                width: 44, height: 44, borderRadius: '50%', border: 'none',
+                background: textInput.trim() ? 'linear-gradient(135deg, #7c3aed, #5b21b6)' : 'rgba(255,255,255,0.1)',
+                cursor: textInput.trim() ? 'pointer' : 'not-allowed',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: textInput.trim() ? '0 2px 12px rgba(124,58,237,0.5)' : 'none',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M22 2L11 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Controls */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
@@ -390,7 +486,7 @@ export default function AIConversationPage() {
           <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
             <motion.button
               whileTap={{ scale: 0.95 }} whileHover={{ scale: 1.02 }}
-              onClick={state.reset}
+              onClick={() => { state.reset(); setTextMode(false); setTextInput('') }}
               style={{ padding: '12px 28px', borderRadius: 50, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, color: 'white', background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', boxShadow: '0 4px 20px rgba(124,58,237,0.4)' }}
             >
               Call again
@@ -412,6 +508,7 @@ export default function AIConversationPage() {
             onCameraToggle={state.toggleCamera}
             onEndCall={handleEndCall}
             onPrimaryAction={handlePrimary}
+            textMode={textMode}
           />
         )}
       </motion.div>

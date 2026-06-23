@@ -4,6 +4,7 @@ import type { AvatarPhase } from '../../hooks/useAvatarState'
 interface Props {
   phase: AvatarPhase
   twinName: string
+  statusOverride?: string
 }
 
 const PHASE_CONFIG: Record<AvatarPhase, { label: string; color: string; dot: string }> = {
@@ -14,8 +15,9 @@ const PHASE_CONFIG: Record<AvatarPhase, { label: string; color: string; dot: str
   ended: { label: 'Call ended', color: 'rgba(239,68,68,0.7)', dot: '#ef4444' },
 }
 
-export default function StatusIndicator({ phase, twinName }: Props) {
+export default function StatusIndicator({ phase, twinName, statusOverride }: Props) {
   const cfg = PHASE_CONFIG[phase]
+  const label = statusOverride ?? cfg.label
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -38,7 +40,7 @@ export default function StatusIndicator({ phase, twinName }: Props) {
             transition={{ duration: phase === 'thinking' ? 0.8 : 1.4, repeat: Infinity, ease: 'easeInOut' }}
           />
           <span style={{ fontSize: 13, fontWeight: 500, color: cfg.color, letterSpacing: '0.02em' }}>
-            {cfg.label}
+            {label}
           </span>
         </motion.div>
       </AnimatePresence>

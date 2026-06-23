@@ -14,15 +14,20 @@ interface Props {
   onCameraToggle: () => void
   onEndCall: () => void
   onPrimaryAction: () => void
+  textMode?: boolean
 }
 
 export default function CallControls({
   phase, isMuted, isCameraOn,
-  onMicToggle, onCameraToggle, onEndCall, onPrimaryAction,
+  onMicToggle, onCameraToggle, onEndCall, onPrimaryAction, textMode,
 }: Props) {
   const isActive = phase !== 'idle' && phase !== 'ended'
 
-  const primaryLabel = phase === 'idle' ? 'Start Talking' : phase === 'listening' ? 'Stop' : phase === 'thinking' ? 'Thinking…' : 'Interrupt'
+  const primaryLabel = phase === 'idle'
+    ? 'Start Talking'
+    : phase === 'listening'
+      ? (textMode ? 'Send Message' : 'Stop')
+      : phase === 'thinking' ? 'Thinking…' : 'Interrupt'
   const primaryColor = phase === 'listening' ? '#7c3aed' : phase === 'speaking' ? '#06b6d4' : '#7c3aed'
 
   return (
