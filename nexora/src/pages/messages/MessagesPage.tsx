@@ -1,6 +1,6 @@
 import {
   Box, Text, Avatar, Group, Stack, TextInput, ActionIcon, Paper,
-  Badge, Loader, Center, ScrollArea, Tooltip, Popover
+  Badge, Loader, Center, ScrollArea, Tooltip, Popover, Modal
 } from '@mantine/core'
 import {
   IconSearch, IconSend, IconPaperclip, IconMicrophone, IconMoodSmile,
@@ -11,6 +11,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { notifications } from '@mantine/notifications'
 import { useRooms, useMessages, useRealtimeMessages, useSendMessage, useDeleteMessage, usePinMessage, useAddReaction, useMarkRead } from '../../hooks/useMessages'
+import { useSearchProfiles } from '../../hooks/useProfile'
 import { useAuthStore } from '../../store/useAuthStore'
 import { getInitials, timeAgo, truncate } from '../../utils'
 import { messageService } from '../../services/message.service'
@@ -299,7 +300,11 @@ export default function MessagesPage() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [attachment, setAttachment] = useState<{ url: string; name: string; type: string } | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [newChatOpen, setNewChatOpen] = useState(false)
+  const [newChatQuery, setNewChatQuery] = useState('')
+  const [newChatLoading, setNewChatLoading] = useState(false)
 
+  const { data: newChatResults = [] } = useSearchProfiles(newChatQuery)
   const { data: rooms = [], isLoading: roomsLoading } = useRooms()
   const { data: messages = [], isLoading: msgsLoading } = useMessages(activeRoomId ?? '')
   useRealtimeMessages(activeRoomId ?? '')
@@ -406,6 +411,21 @@ export default function MessagesPage() {
     setRecordDuration(0)
   }
 
+  async function startNewChat(targetUserId: string) {
+    if (!authUser) return
+    setNewChatLoading(true)
+    try {
+      const roomId = await messageService.getOrCreateRoom(authUser.id, targetUserId)
+      selectRoom(roomId)
+      setNewChatOpen(false)
+      setNewChatQuery('')
+    } catch {
+      notifications.show({ title: 'Error', message: 'Could not start conversation — messaging tables may not exist yet', color: 'red' })
+    } finally {
+      setNewChatLoading(false)
+    }
+  }
+
   async function handleSearch() {
     if (!activeRoomId || !searchQuery.trim()) return
     const results = await messageService.searchMessages(activeRoomId, searchQuery)
@@ -437,7 +457,7 @@ export default function MessagesPage() {
           <Group justify="space-between" mb="xs">
             <Text fw={700} c="white" size="lg">Messages</Text>
             <Tooltip label="New Chat">
-              <ActionIcon variant="subtle" c="violet"><IconMessage size={18} /></ActionIcon>
+              <ActionIcon variant="subtle" c="violet" onClick={() => setNewChatOpen(true)}><IconMessage size={18} /></ActionIcon>
             </Tooltip>
           </Group>
           <TextInput
@@ -703,6 +723,59 @@ export default function MessagesPage() {
         </Box>
       )}
 
+      {/* ── New Chat Modal ── */}
+      <Modal
+        opened={newChatOpen}
+        onClose={() => { setNewChatOpen(false); setNewChatQuery('') }}
+        title={<Text fw={700} c="white">New Message</Text>}
+        centered size="sm"
+        styles={{
+          header: { background: '#0f0f1a', borderBottom: '1px solid #1e1e3a' },
+          body: { background: '#0f0f1a', padding: 0 },
+          content: { background: '#0f0f1a' },
+        }}
+      >
+        <Box p="md">
+          <TextInput
+            placeholder="Search people..."
+            leftSection={<IconSearch size={14} />}
+            value={newChatQuery}
+            onChange={e => setNewChatQuery(e.target.value)}
+            autoFocus
+            styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white' } }}
+            mb="sm"
+          />
+          {newChatQuery.length < 2 ? (
+            <Text c="dimmed" size="sm" ta="center" py="md">Type a name to search</Text>
+          ) : newChatResults.length === 0 ? (
+            <Text c="dimmed" size="sm" ta="center" py="md">No users found</Text>
+          ) : (
+            <Stack gap={4}>
+              {newChatResults.filter(u => u.id !== authUser?.id).map(user => (
+                <Box
+                  key={user.id}
+                  onClick={() => !newChatLoading && startNewChat(user.id)}
+                  style={{
+                    padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                    background: 'transparent', transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(124,58,237,0.12)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                >
+                  <Group gap={10}>
+                    <Avatar src={user.avatar_url} radius="xl" size={40}>{getInitials(user.full_name)}</Avatar>
+                    <Stack gap={0} style={{ flex: 1 }}>
+                      <Text fw={600} c="white" size="sm">{user.full_name}</Text>
+                      <Text c="dimmed" size="xs">@{user.username}</Text>
+                    </Stack>
+                    {newChatLoading && <Loader size="xs" color="violet" />}
+                  </Group>
+                </Box>
+              ))}
+            </Stack>
+          )}
+        </Box>
+      </Modal>
     </Box>
   )
 }

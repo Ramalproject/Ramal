@@ -1,11 +1,13 @@
 import { Box, Group, Text, Avatar, Badge, Button, Tabs, Stack, Skeleton, Paper } from '@mantine/core'
-import { IconMapPin, IconLink, IconUserCheck, IconUserPlus } from '@tabler/icons-react'
+import { IconMapPin, IconLink, IconUserCheck, IconUserPlus, IconMessage } from '@tabler/icons-react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useProfileByUsername, useIsFollowing, useFollowUser, useUnfollowUser } from '../../hooks/useProfile'
 import { useUserPosts } from '../../hooks/usePosts'
 import { useAuthStore } from '../../store/useAuthStore'
+import { notifications } from '@mantine/notifications'
 import { formatNumber, getInitials, getPlanColor, getPlanLabel } from '../../utils'
+import { messageService } from '../../services/message.service'
 import PostCard from '../../components/feed/PostCard'
 
 export default function ProfilePage() {
@@ -69,16 +71,35 @@ export default function ProfilePage() {
               Edit Profile
             </Button>
           ) : (
-            <Button
-              size="sm"
-              color="violet"
-              variant={isFollowing ? 'outline' : 'filled'}
-              leftSection={isFollowing ? <IconUserCheck size={14} /> : <IconUserPlus size={14} />}
-              onClick={handleFollowToggle}
-              loading={followUser.isPending || unfollowUser.isPending}
-            >
-              {isFollowing ? 'Following' : 'Follow'}
-            </Button>
+            <Group gap={8}>
+              <Button
+                size="sm"
+                color="violet"
+                variant={isFollowing ? 'outline' : 'filled'}
+                leftSection={isFollowing ? <IconUserCheck size={14} /> : <IconUserPlus size={14} />}
+                onClick={handleFollowToggle}
+                loading={followUser.isPending || unfollowUser.isPending}
+              >
+                {isFollowing ? 'Following' : 'Follow'}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                color="violet"
+                leftSection={<IconMessage size={14} />}
+                onClick={async () => {
+                  if (!authUser) return
+                  try {
+                    const roomId = await messageService.getOrCreateRoom(authUser.id, profile.id)
+                    navigate(`/messages/${roomId}`)
+                  } catch {
+                    notifications.show({ message: 'Could not open messages', color: 'red' })
+                  }
+                }}
+              >
+                Message
+              </Button>
+            </Group>
           )}
         </Group>
 
