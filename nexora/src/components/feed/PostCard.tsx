@@ -1,6 +1,6 @@
 import { Paper, Group, Avatar, Text, Badge, ActionIcon, Stack, SimpleGrid, Menu, Modal, Textarea, Button, Box, TextInput, Loader, Divider } from '@mantine/core'
 import { IconHeart, IconHeartFilled, IconMessageCircle, IconShare, IconBookmark, IconBookmarkFilled, IconDots, IconEdit, IconTrash, IconCheck, IconX, IconSend, IconCopy, IconBrandFacebook } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { notifications } from '@mantine/notifications'
 import type { Post } from '../../types'
@@ -70,8 +70,12 @@ export default function PostCard({ post }: Props) {
   const deleteComment = useDeleteComment(post.id)
   const { data: comments = [], isLoading: commentsLoading } = useComments(post.id, showComments)
 
-  // Sync local count with actual loaded list — comments_count in DB may be stale
-  const displayCommentCount = showComments && !commentsLoading ? comments.length : commentCount
+  // Once comments load, persist the real count so it's correct even after hiding
+  useEffect(() => {
+    if (showComments && !commentsLoading) setCommentCount(comments.length)
+  }, [comments.length, commentsLoading, showComments])
+
+  const displayCommentCount = commentCount
 
   const isOwn = post.author_id === authUser?.id
 
