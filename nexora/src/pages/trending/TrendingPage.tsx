@@ -26,13 +26,13 @@ export default function TrendingPage() {
 
   return (
     <Box p="xl" maw={1100} mx="auto">
-      <Title order={2} c="white" mb="xl">
+      <Title order={2} mb="xl">
         <Group gap={8}><IconTrendingUp color="#7c3aed" size={28} /> Trending</Group>
       </Title>
 
       <Grid>
         <Grid.Col span={{ base: 12, md: 7 }}>
-          <Text fw={600} c="white" mb="md">🔥 Hot Posts</Text>
+          <Text fw={600} mb="md">🔥 Hot Posts</Text>
           <Stack gap="sm">
             {postsLoading
               ? [1, 2, 3, 4, 5].map(i => <Skeleton key={i} height={80} radius="md" />)
@@ -46,7 +46,7 @@ export default function TrendingPage() {
                         {post.author?.full_name ? getInitials(post.author.full_name) : '?'}
                       </Avatar>
                       <Stack gap={0} style={{ flex: 1 }}>
-                        <Text c="white" size="sm">{truncate(post.content, 80)}</Text>
+                        <Text size="sm">{truncate(post.content, 80)}</Text>
                         <Group gap={8} mt={2}>
                           <Text c="dimmed" size="xs">@{post.author?.username}</Text>
                           <Text c="dimmed" size="xs">·</Text>
@@ -66,7 +66,7 @@ export default function TrendingPage() {
 
         <Grid.Col span={{ base: 12, md: 5 }}>
           <Paper p="md" mb="md" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
-            <Text fw={600} c="white" mb="sm"># Trending Hashtags</Text>
+            <Text fw={600} mb="sm"># Trending Hashtags</Text>
             {hashtags.length === 0
               ? <Text c="dimmed" size="sm">No hashtags found in posts yet.</Text>
               : <Stack gap={6}>
@@ -81,7 +81,7 @@ export default function TrendingPage() {
           </Paper>
 
           <Paper p="md" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
-            <Text fw={600} c="white" mb="sm">⭐ Top Creators</Text>
+            <Text fw={600} mb="sm">⭐ Top Creators</Text>
             {creatorsLoading
               ? [1, 2, 3].map(i => <Skeleton key={i} height={50} radius="md" mb={4} />)
               : creators.map((creator, i) => (
@@ -90,7 +90,7 @@ export default function TrendingPage() {
                     <Text w={24}>{i < 3 ? MEDALS[i] : `${i + 1}.`}</Text>
                     <Avatar src={creator.avatar_url} radius="xl" size="sm">{getInitials(creator.full_name)}</Avatar>
                     <Stack gap={0}>
-                      <Text c="white" size="sm" fw={600}>{creator.full_name}</Text>
+                      <Text size="sm" fw={600}>{creator.full_name}</Text>
                       <Text c="dimmed" size="xs">@{creator.username}</Text>
                     </Stack>
                   </Group>

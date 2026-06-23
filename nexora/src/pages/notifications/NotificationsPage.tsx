@@ -25,7 +25,7 @@ export default function NotificationsPage() {
   return (
     <Box p="xl" maw={700} mx="auto">
       <Group justify="space-between" mb="xl">
-        <Title order={2} c="white">
+        <Title order={2}>
           <Group gap={8}><IconBell color="#7c3aed" size={28} /> Notifications</Group>
         </Title>
         <Button
@@ -65,7 +65,7 @@ export default function NotificationsPage() {
                 <Group>
                   <Text size="xl">{NOTIF_ICONS[n.type] ?? '🔔'}</Text>
                   <Stack gap={2}>
-                    <Text c="white" size="sm" fw={n.is_read ? 400 : 600}>{n.title}</Text>
+                    <Text size="sm" fw={n.is_read ? 400 : 600}>{n.title}</Text>
                     <Text c="dimmed" size="xs">{n.body}</Text>
                     <Text c="dimmed" size="xs">{timeAgo(n.created_at)}</Text>
                   </Stack>

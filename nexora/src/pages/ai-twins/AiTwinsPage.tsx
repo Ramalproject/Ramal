@@ -65,7 +65,7 @@ function TwinCard({ twin }: { twin: AiTwin }) {
         </Avatar>
         <Stack gap={0} align="center">
           <Group gap={6}>
-            <Text fw={700} c="white">{twin.name}</Text>
+            <Text fw={700}>{twin.name}</Text>
             <Badge size="xs" color="violet" variant="light">AI</Badge>
           </Group>
           {twin.owner && <Text c="dimmed" size="xs">by @{twin.owner.username}</Text>}
@@ -76,14 +76,14 @@ function TwinCard({ twin }: { twin: AiTwin }) {
         </Group>
         <Group gap="xl">
           <Stack gap={0} align="center">
-            <Text fw={700} c="white" size="sm">{formatNumber(twin.chats_count)}</Text>
+            <Text fw={700} size="sm">{formatNumber(twin.chats_count)}</Text>
             <Text c="dimmed" size="xs">Chats</Text>
           </Stack>
           {twin.rating > 0 && (
             <Stack gap={0} align="center">
               <Group gap={2}>
                 <IconStar size={12} color="#f59e0b" />
-                <Text fw={700} c="white" size="sm">{twin.rating.toFixed(1)}</Text>
+                <Text fw={700} size="sm">{twin.rating.toFixed(1)}</Text>
               </Group>
               <Text c="dimmed" size="xs">Rating</Text>
             </Stack>
@@ -105,7 +105,7 @@ export default function AiTwinsPage() {
   return (
     <Box p="xl" maw={1100} mx="auto">
       <Group justify="space-between" mb="xl">
-        <Title order={2} c="white">
+        <Title order={2}>
           <Group gap={8}><IconRobot color="#7c3aed" size={28} /> AI Twins</Group>
         </Title>
         <Button leftSection={<IconPlus size={14} />} style={{ background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' }}>

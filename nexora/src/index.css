@@ -45,8 +45,7 @@ body {
 html, body, #root { height: 100%; }
 
 /* Light mode: override hardcoded white/light text to be readable */
-[data-mantine-color-scheme="light"] [data-c="white"],
-[data-mantine-color-scheme="light"] [class*="mantine-Text"][data-c="white"] {
+[data-mantine-color-scheme="light"] [data-c="white"] {
   color: #1a202c !important;
 }
 [data-mantine-color-scheme="light"] body {
@@ -55,6 +54,10 @@ html, body, #root { height: 100%; }
 [data-mantine-color-scheme="light"] .mantine-Paper-root,
 [data-mantine-color-scheme="light"] .mantine-Modal-content {
   color: #1a202c;
+}
+/* Preserve white text inside explicitly dark overlay surfaces (e.g. video call) */
+[data-mantine-color-scheme="light"] .nex-dark-surface [data-c="white"] {
+  color: #ffffff !important;
 }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--scrollbar-track); }

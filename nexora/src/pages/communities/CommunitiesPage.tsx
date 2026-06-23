@@ -26,7 +26,7 @@ export default function CommunitiesPage() {
   return (
     <Box p="xl" maw={1000} mx="auto">
       <Group justify="space-between" mb="xl">
-        <Title order={2} c="white">
+        <Title order={2}>
           <Group gap={8}><IconUsers color="#7c3aed" size={28} /> Communities</Group>
         </Title>
         <Button leftSection={<IconPlus size={14} />} style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>
@@ -63,7 +63,7 @@ export default function CommunitiesPage() {
                       {c.name.charAt(0).toUpperCase()}
                     </Avatar>
                     <Stack gap={0} style={{ flex: 1 }}>
-                      <Text c="white" fw={700}>{c.name}</Text>
+                      <Text fw={700}>{c.name}</Text>
                       {c.category && <Badge size="xs" variant="outline" color="violet">{c.category}</Badge>}
                     </Stack>
                   </Group>

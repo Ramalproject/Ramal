@@ -49,7 +49,7 @@ function StatCard({ icon, label, value, color }: StatCardProps) {
           {icon}
         </Box>
         <Stack gap={2}>
-          <Text size="xl" fw={800} c="white">{formatNumber(value)}</Text>
+          <Text size="xl" fw={800}>{formatNumber(value)}</Text>
           <Text size="sm" c="dimmed">{label}</Text>
         </Stack>
       </Group>
@@ -77,7 +77,7 @@ export default function AnalyticsPage() {
 
   return (
     <Box p="xl" maw={900} mx="auto">
-      <Title order={2} c="white" mb="xl">
+      <Title order={2} mb="xl">
         <Group gap={8}><IconTrendingUp color="#7c3aed" size={28} /> Analytics</Group>
       </Title>
 
@@ -99,13 +99,13 @@ export default function AnalyticsPage() {
 
       {!isLoading && stats && (
         <Paper p="xl" mt="xl" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
-          <Text fw={600} c="white" mb="xl" ta="center">Engagement Breakdown</Text>
+          <Text fw={600} mb="xl" ta="center">Engagement Breakdown</Text>
           <Group justify="center" gap="xl">
             <RingProgress
               size={180}
               thickness={20}
               label={
-                <Text ta="center" c="white" fw={700}>
+                <Text ta="center" fw={700}>
                   {formatNumber(stats.totalLikes + stats.totalComments)}
                   <Text size="xs" c="dimmed">total</Text>
                 </Text>

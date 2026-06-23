@@ -90,7 +90,7 @@ export default function RegisterPage() {
             </Stack>
           </Center>
 
-          <Text size="lg" fw={600} c="white" ta="center">Create your account</Text>
+          <Text size="lg" fw={600} ta="center">Create your account</Text>
 
           {error && (
             <Alert icon={<IconAlertCircle size={16} />} color="red" variant="light">

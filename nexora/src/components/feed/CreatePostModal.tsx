@@ -174,7 +174,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
               {getInitials(profile?.full_name ?? user?.email ?? 'U')}
             </Avatar>
             <Box>
-              <Text fw={700} c="white" size="sm">{profile?.full_name ?? user?.email?.split('@')[0]}</Text>
+              <Text fw={700} size="sm">{profile?.full_name ?? user?.email?.split('@')[0]}</Text>
               {/* ── Visibility dropdown ── */}
               <Menu shadow="md" width={180} withinPortal zIndex={1002}>
                 <Menu.Target>
@@ -379,7 +379,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                         <Avatar src={u.avatar_url} size={28} radius="xl">{getInitials(u.full_name)}</Avatar>
                         <Box>
-                          <Text size="xs" c="white" fw={600}>{u.full_name}</Text>
+                          <Text size="xs" fw={600}>{u.full_name}</Text>
                           <Text size="10px" c="dimmed">@{u.username}</Text>
                         </Box>
                       </Box>
@@ -404,7 +404,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                 <IconRocket size={18} color={boostEnabled ? 'white' : '#4a4a6a'} />
               </Box>
               <Box>
-                <Text size="sm" fw={600} c="white">Boost Post</Text>
+                <Text size="sm" fw={600}>Boost Post</Text>
                 <Text size="xs" c="dimmed">Reach more people with paid promotion</Text>
               </Box>
             </Group>
@@ -479,17 +479,17 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                 <Group justify="space-around">
                   <Box ta="center">
                     <Group gap={4} justify="center" mb={2}><IconEye size={14} color="#7c3aed" /><Text size="xs" c="dimmed" fw={500}>Est. Reach</Text></Group>
-                    <Text size="sm" fw={700} c="white">{reach}</Text>
+                    <Text size="sm" fw={700}>{reach}</Text>
                   </Box>
                   <Divider orientation="vertical" color="var(--nex-border)" />
                   <Box ta="center">
                     <Group gap={4} justify="center" mb={2}><IconClock size={14} color="#06b6d4" /><Text size="xs" c="dimmed" fw={500}>Duration</Text></Group>
-                    <Text size="sm" fw={700} c="white">{duration} {Number(duration) === 1 ? 'Day' : 'Days'}</Text>
+                    <Text size="sm" fw={700}>{duration} {Number(duration) === 1 ? 'Day' : 'Days'}</Text>
                   </Box>
                   <Divider orientation="vertical" color="var(--nex-border)" />
                   <Box ta="center">
                     <Group gap={4} justify="center" mb={2}><IconCurrencyDollar size={14} color="#10b981" /><Text size="xs" c="dimmed" fw={500}>Total Spend</Text></Group>
-                    <Text size="sm" fw={700} c="white">${totalSpend.toFixed(0)}</Text>
+                    <Text size="sm" fw={700}>${totalSpend.toFixed(0)}</Text>
                   </Box>
                 </Group>
               </Box>

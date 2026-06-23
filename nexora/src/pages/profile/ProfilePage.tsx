@@ -120,7 +120,7 @@ export default function ProfilePage() {
       <Modal
         opened={setupOpen}
         onClose={() => setSetupOpen(false)}
-        title={<Text fw={700} c="white" size="lg">⚙️ Messaging Setup Required</Text>}
+        title={<Text fw={700} size="lg">⚙️ Messaging Setup Required</Text>}
         size="xl" centered
         styles={{
           header: { background: 'var(--nex-surface-alt)', borderBottom: '1px solid var(--nex-border)' },
@@ -133,11 +133,11 @@ export default function ProfilePage() {
             The messaging tables don't exist in your Supabase database yet. Follow these steps:
           </Text>
           <Stack gap={6}>
-            <Text c="white" size="sm" fw={600}>1. Open your Supabase project dashboard</Text>
-            <Text c="white" size="sm" fw={600}>2. Click <Text span c="violet" fw={700}>SQL Editor</Text> in the left menu</Text>
-            <Text c="white" size="sm" fw={600}>3. Click <Text span c="violet" fw={700}>+ New query</Text></Text>
-            <Text c="white" size="sm" fw={600}>4. Copy the SQL below and paste it</Text>
-            <Text c="white" size="sm" fw={600}>5. Click the green <Text span c="green" fw={700}>Run</Text> button</Text>
+            <Text size="sm" fw={600}>1. Open your Supabase project dashboard</Text>
+            <Text size="sm" fw={600}>2. Click <Text span c="violet" fw={700}>SQL Editor</Text> in the left menu</Text>
+            <Text size="sm" fw={600}>3. Click <Text span c="violet" fw={700}>+ New query</Text></Text>
+            <Text size="sm" fw={600}>4. Copy the SQL below and paste it</Text>
+            <Text size="sm" fw={600}>5. Click the green <Text span c="green" fw={700}>Run</Text> button</Text>
           </Stack>
           <Box style={{ position: 'relative' }}>
             <CopyButton value={MESSAGING_SQL}>
@@ -186,7 +186,7 @@ export default function ProfilePage() {
         <Group justify="space-between" align="flex-start">
           <Stack gap={4}>
             <Group gap={8}>
-              <Text size="xl" fw={700} c="white">{profile.full_name}</Text>
+              <Text size="xl" fw={700}>{profile.full_name}</Text>
               {profile.is_verified && <Text c="cyan" fw={700}>✓</Text>}
               {profile.is_private && (
                 <Tooltip label="Private Account"><Badge color="gray" size="sm" leftSection={<IconLock size={10} />}>Private</Badge></Tooltip>
@@ -270,7 +270,7 @@ export default function ProfilePage() {
             { label: 'Following', value: profile.following_count },
           ].map(({ label, value }) => (
             <Stack key={label} gap={0} align="center">
-              <Text fw={700} c="white">{formatNumber(value)}</Text>
+              <Text fw={700}>{formatNumber(value)}</Text>
               <Text c="dimmed" size="xs">{label}</Text>
             </Stack>
           ))}

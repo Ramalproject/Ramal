@@ -60,7 +60,7 @@ export default function SettingsPage() {
 
   return (
     <Box p="xl" maw={700} mx="auto">
-      <Title order={2} c="white" mb="xl">
+      <Title order={2} mb="xl">
         <Group gap={8}><IconSettings color="#7c3aed" size={28} /> Settings</Group>
       </Title>
 
@@ -106,11 +106,11 @@ export default function SettingsPage() {
               <Button variant="outline" color="violet">Update Password</Button>
               {/* Privacy */}
               <Paper p="md" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-subtle)', borderRadius: 8 }}>
-                <Text c="white" fw={600} mb={4}>Account Privacy</Text>
+                <Text fw={600} mb={4}>Account Privacy</Text>
                 <Text c="dimmed" size="xs" mb="md">Control who can see your posts and profile</Text>
                 <Group justify="space-between" align="center" mb="sm">
                   <Box>
-                    <Text size="sm" c="white" fw={500}>{isPrivate ? '🔒 Private Account' : '🌐 Public Account'}</Text>
+                    <Text size="sm" fw={500}>{isPrivate ? '🔒 Private Account' : '🌐 Public Account'}</Text>
                     <Text size="xs" c="dimmed">
                       {isPrivate ? 'Only approved followers can see your posts' : 'Anyone can see your posts and profile'}
                     </Text>
@@ -137,7 +137,7 @@ export default function SettingsPage() {
         <Tabs.Panel value="apikeys">
           <Paper p="xl" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
             <Stack>
-              <Text c="white" fw={600}>OpenAI API Key</Text>
+              <Text fw={600}>OpenAI API Key</Text>
               <Text c="dimmed" size="sm">
                 Used for AI Twin chat and voice features. Your key is stored locally in your browser only — never sent to our servers.
               </Text>

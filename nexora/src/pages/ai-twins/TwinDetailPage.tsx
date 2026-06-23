@@ -162,7 +162,7 @@ export default function TwinDetailPage() {
           </Box>
           <Stack gap={0} style={{ flex: 1 }}>
             <Group gap={6}>
-              <Text fw={700} c="white">{twin.name}</Text>
+              <Text fw={700}>{twin.name}</Text>
               <Badge size="xs" color="violet" variant="light">AI Twin</Badge>
             </Group>
             <Group gap={4}>
@@ -192,7 +192,7 @@ export default function TwinDetailPage() {
             <Avatar src={twin.avatar_url} radius="xl" size={80} mx="auto" mb="md">
               <IconRobot size={40} color="#7c3aed" />
             </Avatar>
-            <Text fw={600} c="white" size="lg">{twin.name}</Text>
+            <Text fw={600} size="lg">{twin.name}</Text>
             {twin.bio && <Text c="dimmed" size="sm" mt={4} maw={400} mx="auto">{twin.bio}</Text>}
             <Text c="dimmed" size="sm" mt="xl">
               👋 Start a conversation with {twin.name}!
@@ -217,7 +217,7 @@ export default function TwinDetailPage() {
                   borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                 }}
               >
-                <Text c="white" size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                   {msg.content}
                 </Text>
               </Paper>

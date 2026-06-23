@@ -16,7 +16,7 @@ export default function ExplorePage() {
 
   return (
     <Box p="xl" maw={800} mx="auto">
-      <Title order={2} c="white" mb="xl">
+      <Title order={2} mb="xl">
         <Group gap={8}><IconCompass color="#7c3aed" size={28} /> Explore</Group>
       </Title>
 
@@ -32,7 +32,7 @@ export default function ExplorePage() {
 
       {!isSearching ? (
         <Box>
-          <Text fw={600} c="white" mb="md">⭐ Suggested People</Text>
+          <Text fw={600} mb="md">⭐ Suggested People</Text>
           <Stack gap="sm">
             {topCreators.map(creator => (
               <Paper
@@ -43,7 +43,7 @@ export default function ExplorePage() {
                 <Group>
                   <Avatar src={creator.avatar_url} radius="xl" size="md">{getInitials(creator.full_name)}</Avatar>
                   <Stack gap={0} style={{ flex: 1 }}>
-                    <Text c="white" fw={600}>{creator.full_name}</Text>
+                    <Text fw={600}>{creator.full_name}</Text>
                     <Text c="dimmed" size="sm">@{creator.username}</Text>
                   </Stack>
                   <Text c="violet" size="sm" fw={600}>{formatNumber(creator.followers_count)} followers</Text>
@@ -73,7 +73,7 @@ export default function ExplorePage() {
                       <Group>
                         <Avatar src={p.avatar_url} radius="xl" size="md">{getInitials(p.full_name)}</Avatar>
                         <Stack gap={0}>
-                          <Text c="white" fw={600}>{p.full_name}</Text>
+                          <Text fw={600}>{p.full_name}</Text>
                           <Text c="dimmed" size="sm">@{p.username}</Text>
                         </Stack>
                       </Group>
@@ -96,7 +96,7 @@ export default function ExplorePage() {
                         </Avatar>
                         <Text c="dimmed" size="xs">@{p.author?.username} · {timeAgo(p.created_at)}</Text>
                       </Group>
-                      <Text c="white" size="sm">{truncate(p.content, 200)}</Text>
+                      <Text size="sm">{truncate(p.content, 200)}</Text>
                     </Paper>
                   ))}
                 </Stack>

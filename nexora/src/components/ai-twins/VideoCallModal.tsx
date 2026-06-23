@@ -366,7 +366,7 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
             </Box>
 
             {/* Name */}
-            <Text fw={700} c="white" size="lg" style={{ letterSpacing: 0.5, textShadow: '0 0 16px rgba(167,139,250,0.5)', marginBottom: 24 }}>
+            <Text fw={700} size="lg" style={{ letterSpacing: 0.5, textShadow: '0 0 16px rgba(167,139,250,0.5)', marginBottom: 24, color: 'white' }}>
               {twin.name}
             </Text>
 
@@ -402,7 +402,7 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
             boxShadow: isSpeaking ? '0 0 8px #22c55e' : isListening ? '0 0 8px #a78bfa' : 'none',
             transition: 'all 0.3s ease',
           }} />
-          <Text fw={700} c="white" size="lg" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.7)' }}>{twin.name}</Text>
+          <Text fw={700} size="lg" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.7)', color: 'white' }}>{twin.name}</Text>
           <Text size="sm" style={{ color: isSpeaking ? '#22c55e' : isThinking ? '#c4b5fd' : isListening ? '#c4b5fd' : 'rgba(255,255,255,0.55)' }}>
             {isSpeaking ? 'Speaking' : isThinking ? 'Thinking...' : isListening ? 'Listening to you' : 'Connected'}
           </Text>
@@ -422,7 +422,7 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
           textAlign: 'center',
         }}>
           {isThinking && subtitleRole === 'user' ? <ThinkingDots /> : (
-            <Text size="md" c="white" fw={500} style={{ lineHeight: 1.5 }}>{lastSubtitle}</Text>
+            <Text size="md" fw={500} style={{ lineHeight: 1.5, color: 'white' }}>{lastSubtitle}</Text>
           )}
         </Box>
       </Box>
@@ -445,7 +445,7 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
         }
         <Box style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.72), transparent)', padding: '12px 8px 5px', display: 'flex', alignItems: 'center', gap: 5 }}>
           {isListening && <Box style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa', animation: 'listen-pulse 0.9s ease-in-out infinite', flexShrink: 0 }} />}
-          <Text size="11px" c="white" fw={600}>{isListening ? 'Listening...' : 'You'}</Text>
+          <Text size="11px" fw={600} style={{ color: 'white' }}>{isListening ? 'Listening...' : 'You'}</Text>
         </Box>
       </Box>
 

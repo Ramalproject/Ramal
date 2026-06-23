@@ -92,7 +92,7 @@ export default function LoginPage() {
             </Stack>
           </Center>
 
-          <Text size="lg" fw={600} c="white" ta="center">Welcome back</Text>
+          <Text size="lg" fw={600} ta="center">Welcome back</Text>
 
           {error && (
             <Alert icon={<IconAlertCircle size={16} />} color="red" variant="light">

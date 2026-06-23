@@ -168,7 +168,7 @@ export default function PostCard({ post }: Props) {
             </Avatar>
             <Stack gap={0}>
               <Group gap={6}>
-                <Text fw={600} c="white" size="sm">{post.author?.full_name ?? 'Unknown'}</Text>
+                <Text fw={600} size="sm">{post.author?.full_name ?? 'Unknown'}</Text>
                 {post.author?.is_verified && <Text c="cyan" size="xs" fw={700}>✓</Text>}
                 {post.author?.plan && post.author.plan !== 'free' && (
                   <Badge size="xs" color={getPlanColor(post.author.plan)}>{getPlanLabel(post.author.plan)}</Badge>
@@ -193,7 +193,7 @@ export default function PostCard({ post }: Props) {
         </Group>
 
         {/* Content */}
-        <Text c="white" size="sm" mb={post.media_urls?.length > 0 ? 'sm' : 0} style={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+        <Text size="sm" mb={post.media_urls?.length > 0 ? 'sm' : 0} style={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
           {post.content}
         </Text>
 
@@ -269,7 +269,7 @@ export default function PostCard({ post }: Props) {
                     </Avatar>
                     <Box style={{ flex: 1, background: 'var(--nex-surface)', borderRadius: 12, padding: '6px 12px', border: '1px solid var(--nex-border)' }}>
                       <Group gap={6} mb={2}>
-                        <Text size="xs" fw={600} c="white">{comment.author?.full_name ?? 'Unknown'}</Text>
+                        <Text size="xs" fw={600}>{comment.author?.full_name ?? 'Unknown'}</Text>
                         <Text size="xs" c="dimmed">{timeAgo(comment.created_at)}</Text>
                         {comment.user_id === authUser?.id && (
                           <ActionIcon size="xs" variant="subtle" c="dimmed" ml="auto" onClick={() => deleteComment.mutate(comment.id)}>
@@ -291,7 +291,7 @@ export default function PostCard({ post }: Props) {
       <Modal
         opened={shareOpen}
         onClose={() => setShareOpen(false)}
-        title={<Group gap={8}><IconBrandFacebook size={18} color="#7c3aed" /><Text fw={600} c="white">Share Post</Text></Group>}
+        title={<Group gap={8}><IconBrandFacebook size={18} color="#7c3aed" /><Text fw={600}>Share Post</Text></Group>}
         centered size="md"
         styles={{
           header: { background: 'var(--nex-surface-alt)', borderBottom: '1px solid var(--nex-border)' },
@@ -307,7 +307,7 @@ export default function PostCard({ post }: Props) {
                 {post.author?.full_name ? getInitials(post.author.full_name) : '?'}
               </Avatar>
               <Stack gap={0}>
-                <Text fw={600} c="white" size="sm">{post.author?.full_name ?? 'Unknown'}</Text>
+                <Text fw={600} size="sm">{post.author?.full_name ?? 'Unknown'}</Text>
                 <Text c="dimmed" size="xs">@{post.author?.username} · {timeAgo(post.created_at)}</Text>
               </Stack>
             </Group>
