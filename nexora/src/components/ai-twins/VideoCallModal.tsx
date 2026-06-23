@@ -44,13 +44,18 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
 
   // Start camera
   useEffect(() => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setIsCameraOn(false)
+      return
+    }
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
         streamRef.current = stream
         if (userVideoRef.current) userVideoRef.current.srcObject = stream
       })
       .catch(() => {
-        notifications.show({ title: 'Camera error', message: 'Could not access camera/mic', color: 'orange' })
+        setIsCameraOn(false)
+        notifications.show({ title: 'Camera unavailable', message: 'Camera/mic requires HTTPS. Voice chat still works via text.', color: 'orange' })
       })
     return () => {
       streamRef.current?.getTracks().forEach(t => t.stop())
