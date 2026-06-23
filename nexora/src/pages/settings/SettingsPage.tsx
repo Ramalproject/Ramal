@@ -11,29 +11,77 @@ const OPENAI_KEY_STORAGE = 'nexora_openai_api_key'
 const inputStyle = { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' as const }
 const labelStyle = { color: '#8892b0' as const }
 
-const FIX_MESSAGING_SQL = `-- Fix Messaging — run once in Supabase SQL Editor
-DROP POLICY IF EXISTS "users can see participants in their rooms" ON room_participants;
-CREATE POLICY "users can see participants in their rooms" ON room_participants FOR SELECT USING (auth.uid() IS NOT NULL);
-DROP POLICY IF EXISTS "participants can see messages" ON messages;
-CREATE POLICY "participants can see messages" ON messages FOR SELECT USING (auth.uid() IS NOT NULL);
-DROP POLICY IF EXISTS "participants can send messages" ON messages;
-CREATE POLICY "participants can send messages" ON messages FOR INSERT WITH CHECK (sender_id = auth.uid());
+const FIX_MESSAGING_SQL = `-- FULL RESET — drops corrupted data and rebuilds clean
+-- Run this ONCE in Supabase → SQL Editor → New query → Run
 
-CREATE OR REPLACE FUNCTION send_message(
-  p_room_id uuid, p_sender_id uuid, p_content text,
-  p_message_type text DEFAULT 'text', p_reply_to_id uuid DEFAULT NULL,
-  p_attachment_url text DEFAULT NULL, p_attachment_name text DEFAULT NULL,
-  p_attachment_type text DEFAULT NULL, p_duration int DEFAULT NULL
-) RETURNS json LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE v_msg_id uuid; v_result json;
+DROP TABLE IF EXISTS message_reactions CASCADE;
+DROP TABLE IF EXISTS messages CASCADE;
+DROP TABLE IF EXISTS room_participants CASCADE;
+DROP TABLE IF EXISTS message_rooms CASCADE;
+DROP FUNCTION IF EXISTS create_dm_room(uuid,uuid);
+DROP FUNCTION IF EXISTS send_message(uuid,uuid,text,text,uuid,text,text,text,int);
+
+CREATE TABLE message_rooms (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+CREATE TABLE room_participants (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_id uuid REFERENCES message_rooms(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  last_read_at timestamptz DEFAULT now(),
+  UNIQUE(room_id, user_id)
+);
+CREATE TABLE messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_id uuid REFERENCES message_rooms(id) ON DELETE CASCADE,
+  sender_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  content text NOT NULL DEFAULT '',
+  message_type text NOT NULL DEFAULT 'text',
+  attachment_url text, attachment_name text, attachment_type text,
+  duration int, reply_to_id uuid REFERENCES messages(id) ON DELETE SET NULL,
+  is_deleted boolean DEFAULT false, deleted_at timestamptz, pinned_at timestamptz,
+  created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
+);
+CREATE TABLE message_reactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  message_id uuid REFERENCES messages(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  emoji text NOT NULL, created_at timestamptz DEFAULT now(),
+  UNIQUE(message_id, user_id)
+);
+
+ALTER TABLE message_rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE room_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE message_reactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "participants can see their rooms" ON message_rooms FOR SELECT USING (EXISTS (SELECT 1 FROM room_participants WHERE room_id = id AND user_id = auth.uid()));
+CREATE POLICY "participants can insert rooms" ON message_rooms FOR INSERT WITH CHECK (true);
+CREATE POLICY "participants can update rooms" ON message_rooms FOR UPDATE USING (EXISTS (SELECT 1 FROM room_participants WHERE room_id = id AND user_id = auth.uid()));
+CREATE POLICY "users can see participants in their rooms" ON room_participants FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "users can join rooms" ON room_participants FOR INSERT WITH CHECK (true);
+CREATE POLICY "users can update own participant row" ON room_participants FOR UPDATE USING (user_id = auth.uid());
+CREATE POLICY "participants can see messages" ON messages FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "participants can send messages" ON messages FOR INSERT WITH CHECK (sender_id = auth.uid());
+CREATE POLICY "sender can edit their message" ON messages FOR UPDATE USING (sender_id = auth.uid());
+CREATE POLICY "participants can see reactions" ON message_reactions FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "users can manage own reactions" ON message_reactions FOR ALL USING (user_id = auth.uid());
+
+CREATE OR REPLACE FUNCTION create_dm_room(user1 uuid, user2 uuid)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE existing_room uuid; new_room_id uuid;
 BEGIN
-  IF auth.uid() IS NULL OR auth.uid() != p_sender_id THEN RAISE EXCEPTION 'Unauthorized'; END IF;
-  INSERT INTO messages (room_id, sender_id, content, message_type, reply_to_id, attachment_url, attachment_name, attachment_type, duration, is_deleted)
-  VALUES (p_room_id, p_sender_id, p_content, COALESCE(p_message_type,'text'), p_reply_to_id, p_attachment_url, p_attachment_name, p_attachment_type, p_duration, false)
-  RETURNING id INTO v_msg_id;
-  UPDATE message_rooms SET updated_at = now() WHERE id = p_room_id;
-  SELECT json_build_object('id',m.id,'room_id',m.room_id,'sender_id',m.sender_id,'content',m.content,'message_type',m.message_type,'attachment_url',m.attachment_url,'attachment_name',m.attachment_name,'attachment_type',m.attachment_type,'duration',m.duration,'reply_to_id',m.reply_to_id,'is_deleted',m.is_deleted,'deleted_at',m.deleted_at,'pinned_at',m.pinned_at,'created_at',m.created_at,'updated_at',m.updated_at,'sender',(SELECT json_build_object('id',p.id,'full_name',p.full_name,'username',p.username,'avatar_url',p.avatar_url,'plan',p.plan) FROM profiles p WHERE p.id=m.sender_id),'reactions','[]'::json,'reply_to',NULL) INTO v_result FROM messages m WHERE m.id=v_msg_id;
-  RETURN v_result;
+  SELECT r.id INTO existing_room FROM message_rooms r
+  INNER JOIN room_participants p1 ON p1.room_id = r.id AND p1.user_id = user1
+  INNER JOIN room_participants p2 ON p2.room_id = r.id AND p2.user_id = user2
+  LIMIT 1;
+  IF existing_room IS NOT NULL THEN RETURN existing_room; END IF;
+  INSERT INTO message_rooms (updated_at) VALUES (now()) RETURNING id INTO new_room_id;
+  INSERT INTO room_participants (room_id, user_id, last_read_at)
+  VALUES (new_room_id, user1, now()), (new_room_id, user2, '1970-01-01'::timestamptz);
+  RETURN new_room_id;
 END;
 $$;`
 

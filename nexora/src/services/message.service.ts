@@ -94,17 +94,22 @@ export const messageService = {
     attachment_url?: string; attachment_name?: string; attachment_type?: string
     duration?: number
   }): Promise<Message> {
-    const { data, error } = await supabase.rpc('send_message', {
-      p_room_id: payload.room_id,
-      p_sender_id: payload.sender_id,
-      p_content: payload.content,
-      p_message_type: payload.message_type ?? 'text',
-      p_reply_to_id: payload.reply_to_id ?? null,
-      p_attachment_url: payload.attachment_url ?? null,
-      p_attachment_name: payload.attachment_name ?? null,
-      p_attachment_type: payload.attachment_type ?? null,
-      p_duration: payload.duration ?? null,
-    })
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({
+        room_id: payload.room_id,
+        sender_id: payload.sender_id,
+        content: payload.content,
+        message_type: payload.message_type ?? 'text',
+        reply_to_id: payload.reply_to_id ?? null,
+        attachment_url: payload.attachment_url ?? null,
+        attachment_name: payload.attachment_name ?? null,
+        attachment_type: payload.attachment_type ?? null,
+        duration: payload.duration ?? null,
+        is_deleted: false,
+      })
+      .select(`*, sender:profiles!sender_id(*), reply_to:messages!reply_to_id(*, sender:profiles!sender_id(*)), reactions:message_reactions(*)`)
+      .single()
     if (error) throw error
     return data as Message
   },

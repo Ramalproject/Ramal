@@ -188,15 +188,15 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                 </Menu.Target>
                 <Menu.Dropdown style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-subtle)' }}>
                   <Menu.Item leftSection={<IconWorld size={14} color="#22c55e" />} onClick={() => setVisibility('public')}
-                    style={{ color: visibility === 'public' ? '#a78bfa' : '#e2e8f0' }}>
+                    style={visibility === 'public' ? { color: '#a78bfa' } : undefined}>
                     Public {visibility === 'public' && '✓'}
                   </Menu.Item>
                   <Menu.Item leftSection={<IconUserCheck size={14} color="#06b6d4" />} onClick={() => setVisibility('connections')}
-                    style={{ color: visibility === 'connections' ? '#a78bfa' : '#e2e8f0' }}>
+                    style={visibility === 'connections' ? { color: '#a78bfa' } : undefined}>
                     Connections {visibility === 'connections' && '✓'}
                   </Menu.Item>
                   <Menu.Item leftSection={<IconLock size={14} color="#f59e0b" />} onClick={() => setVisibility('private')}
-                    style={{ color: visibility === 'private' ? '#a78bfa' : '#e2e8f0' }}>
+                    style={visibility === 'private' ? { color: '#a78bfa' } : undefined}>
                     Only Me {visibility === 'private' && '✓'}
                   </Menu.Item>
                 </Menu.Dropdown>
@@ -267,7 +267,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
             autosize
             styles={{
               input: {
-                background: 'transparent', border: 'none', color: '#e2e8f0',
+                background: 'transparent', border: 'none',
                 fontSize: '1rem', lineHeight: 1.6, padding: '4px 0', resize: 'none',
               },
             }}
@@ -340,7 +340,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                         onKeyDown={e => { if (e.key === 'Enter' && locationInput.trim()) { setLocationText(locationInput.trim()); setLocationInput(''); setLocationOpen(false) } }}
                         size="xs"
                         style={{ flex: 1 }}
-                        styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' } }}
+                        styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)' } }}
                         autoFocus
                       />
                       <ActionIcon size={28} style={{ background: '#7c3aed' }}
@@ -368,7 +368,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                       value={tagQuery}
                       onChange={e => handleTagSearch(e.target.value)}
                       size="xs"
-                      styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' } }}
+                      styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)' } }}
                       autoFocus
                       mb={tagResults.length > 0 ? 6 : 0}
                     />
