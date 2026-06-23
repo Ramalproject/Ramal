@@ -21,6 +21,19 @@ export const notificationService = {
     return count ?? 0
   },
 
+  async create(payload: {
+    user_id: string
+    actor_id: string
+    type: string
+    title: string
+    body: string
+    link?: string
+  }): Promise<void> {
+    // Skip if notifying yourself
+    if (payload.user_id === payload.actor_id) return
+    await supabase.from('notifications').insert(payload)
+  },
+
   async markRead(id: string): Promise<void> {
     await supabase.from('notifications').update({ is_read: true }).eq('id', id)
   },

@@ -7,6 +7,7 @@ import type { Post } from '../../types'
 import { useLikePost, useUnlikePost, useDeletePost, useEditPost, useCreatePost } from '../../hooks/usePosts'
 import { useComments, useAddComment, useDeleteComment, useCommentCount } from '../../hooks/useComments'
 import { useAuthStore } from '../../store/useAuthStore'
+import { notificationService } from '../../services/notification.service'
 import { timeAgo, getInitials, getPlanColor, getPlanLabel, formatNumber } from '../../utils'
 
 interface Props { post: Post }
@@ -50,6 +51,7 @@ function ProtectedImage({ src, alt }: { src: string; alt?: string }) {
 export default function PostCard({ post }: Props) {
   const navigate = useNavigate()
   const authUser = useAuthStore(s => s.user)
+  const authProfile = useAuthStore(s => s.profile)
   const [liked, setLiked] = useState(post.liked_by_me ?? false)
   const [likeCount, setLikeCount] = useState(post.likes_count)
   const { data: liveCommentCount } = useCommentCount(post.id)
@@ -76,7 +78,17 @@ export default function PostCard({ post }: Props) {
 
   function toggleLike() {
     if (liked) { setLiked(false); setLikeCount(c => c - 1); unlikePost.mutate(post.id) }
-    else { setLiked(true); setLikeCount(c => c + 1); likePost.mutate(post.id) }
+    else {
+      setLiked(true); setLikeCount(c => c + 1); likePost.mutate(post.id)
+      if (!isOwn && authUser) {
+        notificationService.create({
+          user_id: post.author_id, actor_id: authUser.id,
+          type: 'like', title: 'Someone liked your post',
+          body: `${authProfile?.full_name ?? 'Someone'} liked your post`,
+          link: authProfile?.username ? `/profile/${authProfile.username}` : undefined,
+        }).catch(() => {})
+      }
+    }
   }
 
   function toggleBookmark() {
@@ -130,8 +142,18 @@ export default function PostCard({ post }: Props) {
     const text = commentInput.trim()
     if (!text) return
     addComment.mutate(text, {
-      onSuccess: () => { setCommentInput('') },
-      onError: () => notifications.show({ message: 'Could not add comment — database table may not exist yet', color: 'red' }),
+      onSuccess: () => {
+        setCommentInput('')
+        if (!isOwn && authUser) {
+          notificationService.create({
+            user_id: post.author_id, actor_id: authUser.id,
+            type: 'comment', title: 'New comment on your post',
+            body: `${authProfile?.full_name ?? 'Someone'}: ${text.slice(0, 80)}`,
+            link: authProfile?.username ? `/profile/${authProfile.username}` : undefined,
+          }).catch(() => {})
+        }
+      },
+      onError: () => notifications.show({ message: 'Could not add comment', color: 'red' }),
     })
   }
 

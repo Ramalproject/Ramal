@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { profileService } from '../services/profile.service'
+import { notificationService } from '../services/notification.service'
 import { useAuthStore } from '../store/useAuthStore'
 import type { Profile } from '../types'
 
@@ -34,10 +35,19 @@ export function useIsFollowing(targetUserId: string) {
 export function useFollowUser() {
   const qc = useQueryClient()
   const authUser = useAuthStore(s => s.user)
+  const authProfile = useAuthStore(s => s.profile)
   return useMutation({
     mutationFn: ({ followingId }: { followingId: string }) =>
       profileService.followUser(authUser!.id, followingId),
     onSuccess: (_, { followingId }) => {
+      notificationService.create({
+        user_id: followingId,
+        actor_id: authUser!.id,
+        type: 'follow',
+        title: 'New follower',
+        body: `${authProfile?.full_name ?? 'Someone'} started following you`,
+        link: authProfile?.username ? `/profile/${authProfile.username}` : undefined,
+      }).catch(() => {})
       qc.setQueryData(['isFollowing', authUser?.id, followingId], true)
       // Optimistically update follower/following counts in every cached profile
       // (RLS blocks updating other users' rows in DB, so we update the cache directly)
