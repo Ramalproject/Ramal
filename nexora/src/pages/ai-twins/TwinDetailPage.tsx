@@ -1,24 +1,29 @@
-import { Box, Paper, Avatar, Text, Badge, Button, Group, Stack, TextInput, ActionIcon, ScrollArea, Loader, Tooltip } from '@mantine/core'
-import { IconRobot, IconSend, IconVideo, IconArrowLeft, IconCamera, IconPhone } from '@tabler/icons-react'
+import { Box, Paper, Avatar, Text, Badge, Button, Group, Stack, TextInput, ActionIcon, ScrollArea, Loader, Tooltip, FileButton } from '@mantine/core'
+import { IconRobot, IconSend, IconVideo, IconArrowLeft, IconCamera, IconPhone, IconSparkles } from '@tabler/icons-react'
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import { supabase } from '../../lib/supabase'
-import { useAuthStore } from '../../store/useAuthStore'
 import { formatNumber } from '../../utils'
 import type { AiTwin } from '../../types'
 import VideoCallModal from '../../components/ai-twins/VideoCallModal'
 import AiVoiceCallModal from '../../components/ai-twins/AiVoiceCallModal'
+import { FEATURED_CHARACTERS } from '../../data/featuredCharacters'
 
 interface ChatMessage { role: 'user' | 'assistant'; content: string }
 
 const OPENAI_KEY_STORAGE = 'nexora_openai_api_key'
+const FEAT_AVATAR_PREFIX = 'nexora_feat_avatar_'
 
 function useTwin(id: string) {
+  const isFeatured = id.startsWith('featured-')
   return useQuery({
     queryKey: ['ai-twin', id],
     queryFn: async () => {
+      if (isFeatured) {
+        return FEATURED_CHARACTERS.find(c => c.id === id) ?? null
+      }
       const { data } = await supabase
         .from('ai_twins')
         .select('*, owner:profiles!owner_id(*)')
@@ -33,7 +38,6 @@ function useTwin(id: string) {
 export default function TwinDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const authUser = useAuthStore(s => s.user)
   const qc = useQueryClient()
   const { data: twin, isLoading } = useTwin(id ?? '')
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -42,30 +46,49 @@ export default function TwinDetailPage() {
   const [videoCallOpen, setVideoCallOpen] = useState(false)
   const [voiceCallOpen, setVoiceCallOpen] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
-  const photoInputRef = useRef<HTMLInputElement>(null)
+
+  const isFeatured = (id ?? '').startsWith('featured-')
+
+  // Custom avatar — from localStorage for featured, from DB for owned
+  const [customAvatar, setCustomAvatar] = useState<string | null>(() => {
+    if (isFeatured && id) return localStorage.getItem(`${FEAT_AVATAR_PREFIX}${id}`)
+    return null
+  })
+
   const endRef = useRef<HTMLDivElement>(null)
 
-  const isOwner = !!authUser && !!twin && twin.owner_id === authUser.id
+  const displayAvatar = customAvatar ?? twin?.avatar_url ?? null
 
-  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
+  async function handlePhotoUpload(file: File | null) {
     if (!file || !twin) return
     setUploadingPhoto(true)
     try {
-      const ext = file.name.split('.').pop()
-      const path = `twin-${twin.id}.${ext}`
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
-      if (upErr) throw upErr
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
-      const { error: dbErr } = await supabase.from('ai_twins').update({ avatar_url: urlData.publicUrl }).eq('id', twin.id)
-      if (dbErr) throw dbErr
-      qc.invalidateQueries({ queryKey: ['ai-twin', twin.id] })
-      notifications.show({ title: 'Photo updated!', message: 'Your AI Twin photo is now set', color: 'green' })
+      if (isFeatured) {
+        // For featured characters: store as data URL in localStorage
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const dataUrl = e.target?.result as string
+          localStorage.setItem(`${FEAT_AVATAR_PREFIX}${twin.id}`, dataUrl)
+          setCustomAvatar(dataUrl)
+          notifications.show({ title: 'Photo updated!', message: `${twin.name} now has your custom photo`, color: 'green' })
+        }
+        reader.readAsDataURL(file)
+      } else {
+        // For owned twins: upload to Supabase storage
+        const ext = file.name.split('.').pop()
+        const path = `twin-${twin.id}.${ext}`
+        const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+        if (upErr) throw upErr
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
+        const { error: dbErr } = await supabase.from('ai_twins').update({ avatar_url: urlData.publicUrl }).eq('id', twin.id)
+        if (dbErr) throw dbErr
+        qc.invalidateQueries({ queryKey: ['ai-twin', twin.id] })
+        notifications.show({ title: 'Photo updated!', message: 'Your AI Twin photo is now set', color: 'green' })
+      }
     } catch {
       notifications.show({ title: 'Upload failed', message: 'Could not upload photo', color: 'red' })
     } finally {
       setUploadingPhoto(false)
-      e.target.value = ''
     }
   }
 
@@ -91,7 +114,7 @@ export default function TwinDetailPage() {
     setChatLoading(true)
 
     try {
-      const systemPrompt = `You are ${twin.name}, an AI Twin. ${twin.bio ?? ''} Personality: ${twin.personality ?? 'helpful and friendly'}. Expertise: ${twin.expertise.join(', ')}. Communication style: ${twin.communication_style ?? 'conversational'}.`
+      const systemPrompt = `You are ${twin.name}, an AI character with a distinct personality. ${twin.bio ?? ''} Personality: ${twin.personality ?? 'helpful and friendly'}. Expertise: ${twin.expertise.join(', ')}. Communication style: ${twin.communication_style ?? 'conversational'}. Respond naturally as this character — never break character or reveal you are an AI unless directly asked.`
 
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -133,39 +156,37 @@ export default function TwinDetailPage() {
             <IconArrowLeft size={18} />
           </ActionIcon>
 
-          {/* Avatar with edit-photo overlay for owner */}
+          {/* Avatar with edit-photo overlay */}
           <Box style={{ position: 'relative', flexShrink: 0 }}>
-            <Avatar src={twin.avatar_url} radius="xl" size={48}>
+            <Avatar src={displayAvatar} radius="xl" size={48} style={{ background: '#1e1b4b' }}>
               <IconRobot size={24} color="#7c3aed" />
             </Avatar>
-            {isOwner && (
-              <Tooltip label="Change photo" withArrow position="bottom">
-                <ActionIcon
-                  size={20} radius="xl"
-                  loading={uploadingPhoto}
-                  onClick={() => photoInputRef.current?.click()}
-                  style={{
-                    position: 'absolute', bottom: -2, right: -2,
-                    background: '#7c3aed',
-                    border: '2px solid var(--nex-surface)',
-                  }}
-                >
-                  <IconCamera size={11} color="white" />
-                </ActionIcon>
-              </Tooltip>
-            )}
-            <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={handlePhotoUpload}
-            />
+            <Tooltip label="Change photo" withArrow position="bottom">
+              <Box style={{ position: 'absolute', bottom: -2, right: -2 }}>
+                <FileButton onChange={handlePhotoUpload} accept="image/*">
+                  {(props) => (
+                    <ActionIcon
+                      {...props}
+                      size={20} radius="xl"
+                      loading={uploadingPhoto}
+                      style={{
+                        background: isFeatured ? 'linear-gradient(135deg, #7c3aed, #06b6d4)' : '#7c3aed',
+                        border: '2px solid var(--nex-surface)',
+                      }}
+                    >
+                      <IconCamera size={11} color="white" />
+                    </ActionIcon>
+                  )}
+                </FileButton>
+              </Box>
+            </Tooltip>
           </Box>
+
           <Stack gap={0} style={{ flex: 1 }}>
             <Group gap={6}>
               <Text fw={700}>{twin.name}</Text>
               <Badge size="xs" color="violet" variant="light">AI Twin</Badge>
+              {isFeatured && <Badge size="xs" color="cyan" leftSection={<IconSparkles size={9} />}>Featured</Badge>}
             </Group>
             <Group gap={4}>
               {twin.expertise.slice(0, 3).map(e => (
@@ -199,7 +220,7 @@ export default function TwinDetailPage() {
       <ScrollArea style={{ flex: 1 }} p="md">
         {messages.length === 0 && (
           <Box ta="center" py="xl">
-            <Avatar src={twin.avatar_url} radius="xl" size={80} mx="auto" mb="md">
+            <Avatar src={displayAvatar} radius="xl" size={80} mx="auto" mb="md" style={{ background: '#1e1b4b' }}>
               <IconRobot size={40} color="#7c3aed" />
             </Avatar>
             <Text fw={600} size="lg">{twin.name}</Text>
@@ -213,7 +234,7 @@ export default function TwinDetailPage() {
           {messages.map((msg, i) => (
             <Group key={i} justify={msg.role === 'user' ? 'flex-end' : 'flex-start'} align="flex-end">
               {msg.role === 'assistant' && (
-                <Avatar src={twin.avatar_url} radius="xl" size="sm">
+                <Avatar src={displayAvatar} radius="xl" size="sm" style={{ background: '#1e1b4b' }}>
                   <IconRobot size={14} color="#7c3aed" />
                 </Avatar>
               )}
@@ -235,7 +256,7 @@ export default function TwinDetailPage() {
           ))}
           {chatLoading && (
             <Group>
-              <Avatar src={twin.avatar_url} radius="xl" size="sm">
+              <Avatar src={displayAvatar} radius="xl" size="sm" style={{ background: '#1e1b4b' }}>
                 <IconRobot size={14} color="#7c3aed" />
               </Avatar>
               <Paper p="sm" style={{ background: 'var(--nex-border)', borderRadius: '16px 16px 16px 4px' }}>
@@ -247,8 +268,8 @@ export default function TwinDetailPage() {
         <div ref={endRef} />
       </ScrollArea>
 
-      {videoCallOpen && <VideoCallModal twin={twin} onEnd={() => setVideoCallOpen(false)} />}
-      {voiceCallOpen && <AiVoiceCallModal twin={twin} onEnd={() => setVoiceCallOpen(false)} />}
+      {videoCallOpen && <VideoCallModal twin={{ ...twin, avatar_url: displayAvatar }} onEnd={() => setVideoCallOpen(false)} />}
+      {voiceCallOpen && <AiVoiceCallModal twin={{ ...twin, avatar_url: displayAvatar }} onEnd={() => setVoiceCallOpen(false)} />}
 
       {/* Input */}
       <Box p="md" style={{ background: 'var(--nex-surface)', borderTop: '1px solid var(--nex-border)', flexShrink: 0 }}>

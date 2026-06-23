@@ -1,11 +1,12 @@
 import { Box, Title, Grid, Paper, Avatar, Text, Badge, Button, Group, Stack, Tabs } from '@mantine/core'
-import { IconRobot, IconPlus, IconStar } from '@tabler/icons-react'
+import { IconRobot, IconPlus, IconStar, IconSparkles } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/useAuthStore'
 import { formatNumber } from '../../utils'
 import type { AiTwin } from '../../types'
+import { FEATURED_CHARACTERS } from '../../data/featuredCharacters'
 
 function usePublicTwins() {
   return useQuery({
@@ -39,15 +40,20 @@ function useMyTwins(userId: string) {
   })
 }
 
-function TwinCard({ twin }: { twin: AiTwin }) {
+function TwinCard({ twin, featured }: { twin: AiTwin; featured?: boolean }) {
   const navigate = useNavigate()
+  const customAvatar = typeof window !== 'undefined'
+    ? localStorage.getItem(`nexora_feat_avatar_${twin.id}`)
+    : null
+  const avatarSrc = customAvatar ?? twin.avatar_url
+
   return (
     <Paper
       p="lg"
       onClick={() => navigate(`/ai-twins/${twin.id}`)}
       style={{
         background: 'var(--nex-surface)',
-        border: '1px solid var(--nex-border)',
+        border: `1px solid ${featured ? '#7c3aed44' : 'var(--nex-border)'}`,
         borderRadius: 16,
         cursor: 'pointer',
         transition: 'border-color 0.2s, transform 0.1s',
@@ -55,14 +61,37 @@ function TwinCard({ twin }: { twin: AiTwin }) {
         overflow: 'hidden',
       }}
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#7c3aed' }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--nex-border)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = featured ? '#7c3aed44' : 'var(--nex-border)' }}
     >
       <Box style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #7c3aed, #06b6d4)' }} />
+      {featured && (
+        <Box style={{ position: 'absolute', top: 12, right: 12 }}>
+          <Badge size="xs" color="violet" leftSection={<IconSparkles size={9} />}>Featured</Badge>
+        </Box>
+      )}
 
       <Stack align="center" gap="sm" mt="sm">
-        <Avatar src={twin.avatar_url} radius="xl" size={72} style={{ border: '3px solid #7c3aed33' }}>
-          <IconRobot size={36} color="#7c3aed" />
-        </Avatar>
+        <Box style={{ position: 'relative' }}>
+          <Avatar
+            src={avatarSrc}
+            radius="xl"
+            size={72}
+            style={{ border: '3px solid #7c3aed33', background: '#1e1b4b' }}
+          >
+            <IconRobot size={36} color="#7c3aed" />
+          </Avatar>
+          {featured && (
+            <Box style={{
+              position: 'absolute', bottom: -4, right: -4,
+              background: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
+              borderRadius: '50%', width: 22, height: 22,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: '2px solid var(--nex-surface)',
+            }}>
+              <IconSparkles size={11} color="white" />
+            </Box>
+          )}
+        </Box>
         <Stack gap={0} align="center">
           <Group gap={6}>
             <Text fw={700}>{twin.name}</Text>
@@ -113,9 +142,25 @@ export default function AiTwinsPage() {
         </Button>
       </Group>
 
+      {/* Featured Characters — always visible */}
+      <Box mb="xl">
+        <Group gap={8} mb="md">
+          <IconSparkles size={18} color="#7c3aed" />
+          <Text fw={700} size="lg">Featured AI Characters</Text>
+          <Badge size="sm" color="violet" variant="light">Talk to them anytime</Badge>
+        </Group>
+        <Grid>
+          {FEATURED_CHARACTERS.map(char => (
+            <Grid.Col key={char.id} span={{ base: 12, sm: 6, md: 4, lg: 3 }}>
+              <TwinCard twin={char} featured />
+            </Grid.Col>
+          ))}
+        </Grid>
+      </Box>
+
       <Tabs defaultValue="discover">
         <Tabs.List mb="xl">
-          <Tabs.Tab value="discover">Discover</Tabs.Tab>
+          <Tabs.Tab value="discover">Community Twins</Tabs.Tab>
           <Tabs.Tab value="my-twins">My Twins ({myTwins.length})</Tabs.Tab>
         </Tabs.List>
 
@@ -123,7 +168,7 @@ export default function AiTwinsPage() {
           {publicTwins.length === 0 ? (
             <Box ta="center" py="xl">
               <IconRobot size={64} color="var(--nex-subtle)" />
-              <Text c="dimmed" mt="md">No AI Twins yet. Create the first one!</Text>
+              <Text c="dimmed" mt="md">No community AI Twins yet. Create the first one!</Text>
             </Box>
           ) : (
             <Grid>
