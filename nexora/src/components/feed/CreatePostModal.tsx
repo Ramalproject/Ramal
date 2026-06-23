@@ -147,38 +147,60 @@ export default function CreatePostModal({ opened, onClose }: Props) {
     }
   }
 
-  const detectGPS = useCallback(() => {
-    if (!navigator.geolocation) {
-      notifications.show({ title: 'Not supported', message: 'Your browser does not support geolocation', color: 'orange' })
-      return
-    }
+  const detectGPS = useCallback(async () => {
     setDetectingLocation(true)
-    navigator.geolocation.getCurrentPosition(
-      async ({ coords }) => {
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`,
-            { headers: { 'Accept-Language': 'en' } }
-          )
-          const json = await res.json()
-          const a = json.address ?? {}
-          const city = a.city ?? a.town ?? a.village ?? a.county ?? ''
-          const country = a.country ?? ''
-          const place = [city, country].filter(Boolean).join(', ')
-          setLocationText(place || `${coords.latitude.toFixed(3)}, ${coords.longitude.toFixed(3)}`)
-        } catch {
-          setLocationText(`${coords.latitude.toFixed(3)}, ${coords.longitude.toFixed(3)}`)
-        } finally {
-          setDetectingLocation(false)
-          setLocationOpen(false)
+
+    // Try browser GPS first (requires HTTPS)
+    const tryGPS = (): Promise<{ lat: number; lon: number } | null> =>
+      new Promise(resolve => {
+        if (!navigator.geolocation || location.protocol !== 'https:') {
+          resolve(null); return
         }
-      },
-      () => {
-        setDetectingLocation(false)
-        notifications.show({ title: 'Location denied', message: 'Allow location access in your browser settings', color: 'red' })
-      },
-      { timeout: 10000 }
-    )
+        navigator.geolocation.getCurrentPosition(
+          ({ coords }) => resolve({ lat: coords.latitude, lon: coords.longitude }),
+          () => resolve(null),
+          { timeout: 8000 }
+        )
+      })
+
+    const reverseGeocode = async (lat: number, lon: number): Promise<string> => {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+        { headers: { 'Accept-Language': 'en' } }
+      )
+      const json = await res.json()
+      const a = json.address ?? {}
+      const city = a.city ?? a.town ?? a.village ?? a.county ?? ''
+      const country = a.country ?? ''
+      return [city, country].filter(Boolean).join(', ') || `${lat.toFixed(3)}, ${lon.toFixed(3)}`
+    }
+
+    try {
+      const gps = await tryGPS()
+      if (gps) {
+        const place = await reverseGeocode(gps.lat, gps.lon)
+        setLocationText(place)
+        setLocationOpen(false)
+        return
+      }
+
+      // Fallback: IP-based location (works on HTTP, no permission needed)
+      const res = await fetch('https://ipapi.co/json/')
+      const json = await res.json()
+      const city = json.city ?? ''
+      const country = json.country_name ?? ''
+      const place = [city, country].filter(Boolean).join(', ')
+      if (place) {
+        setLocationText(place)
+        setLocationOpen(false)
+      } else {
+        notifications.show({ title: 'Could not detect location', message: 'Please type your location manually', color: 'orange' })
+      }
+    } catch {
+      notifications.show({ title: 'Could not detect location', message: 'Please type your location manually', color: 'orange' })
+    } finally {
+      setDetectingLocation(false)
+    }
   }, [])
 
   const VisIcon = visibility === 'public' ? IconWorld : visibility === 'connections' ? IconUserCheck : IconLock
