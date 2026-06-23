@@ -5,6 +5,7 @@ import { notifications } from '@mantine/notifications'
 import { useAuthStore } from '../../store/useAuthStore'
 import { profileService } from '../../services/profile.service'
 import { useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 
 const OPENAI_KEY_STORAGE = 'nexora_openai_api_key'
 
@@ -89,7 +90,30 @@ BEGIN
 END;
 $$;
 
--- Step 6: Enable realtime (safe to run even if already enabled)
+-- Step 6: Create notifications table if missing + fix its RLS
+CREATE TABLE IF NOT EXISTS notifications (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  actor_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  type text NOT NULL DEFAULT 'system',
+  title text NOT NULL DEFAULT '',
+  body text NOT NULL DEFAULT '',
+  link text,
+  is_read boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+DO $$
+DECLARE pol RECORD;
+BEGIN
+  FOR pol IN SELECT policyname FROM pg_policies WHERE schemaname='public' AND tablename='notifications'
+  LOOP EXECUTE format('DROP POLICY IF EXISTS %I ON public.notifications', pol.policyname); END LOOP;
+END $$;
+CREATE POLICY "notif_select" ON notifications FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "notif_insert" ON notifications FOR INSERT WITH CHECK (true);
+CREATE POLICY "notif_update" ON notifications FOR UPDATE USING (user_id = auth.uid());
+
+-- Step 7: Enable realtime (safe to run even if already enabled)
 DO $$ BEGIN
   ALTER PUBLICATION supabase_realtime ADD TABLE room_participants;
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -98,6 +122,8 @@ END $$;`
 export default function SettingsPage() {
   const { profile, user, setProfile } = useAuthStore()
   const qc = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const defaultTab = searchParams.get('tab') ?? 'profile'
 
   const [fullName, setFullName] = useState(profile?.full_name ?? '')
   const [bio, setBio] = useState(profile?.bio ?? '')
@@ -148,7 +174,7 @@ export default function SettingsPage() {
         <Group gap={8}><IconSettings color="#7c3aed" size={28} /> Settings</Group>
       </Title>
 
-      <Tabs defaultValue="profile">
+      <Tabs defaultValue={defaultTab}>
         <Tabs.List mb="xl">
           <Tabs.Tab value="profile" leftSection={<IconUser size={14} />}>Profile</Tabs.Tab>
           <Tabs.Tab value="account" leftSection={<IconShield size={14} />}>Account</Tabs.Tab>

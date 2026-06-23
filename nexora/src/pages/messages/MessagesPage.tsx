@@ -1,11 +1,11 @@
 import {
   Box, Text, Avatar, Group, Stack, TextInput, ActionIcon, Paper,
-  Badge, Loader, Center, ScrollArea, Tooltip, Popover, Modal
+  Badge, Loader, Center, ScrollArea, Tooltip, Popover, Modal, Button, Alert
 } from '@mantine/core'
 import {
   IconSearch, IconSend, IconPaperclip, IconMicrophone, IconMoodSmile,
   IconArrowLeft, IconPin, IconTrash, IconCornerUpLeft, IconX, IconCheck,
-  IconChecks, IconPhone, IconVideo, IconMessage,
+  IconChecks, IconPhone, IconVideo, IconMessage, IconDatabase, IconAlertTriangle,
 } from '@tabler/icons-react'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
@@ -518,12 +518,30 @@ export default function MessagesPage() {
           {roomsLoading ? (
             <Center py="xl"><Loader size="sm" color="violet" /></Center>
           ) : filteredRooms.length === 0 ? (
-            <Center py="xl">
-              <Stack align="center" gap="xs">
-                <IconMessage size={40} color="var(--nex-subtle)" />
-                <Text c="dimmed" size="sm" ta="center">No conversations yet</Text>
-              </Stack>
-            </Center>
+            <Box p="md">
+              <Alert
+                color="orange"
+                icon={<IconAlertTriangle size={16} />}
+                title="Database fix needed"
+                radius="md"
+                mb="sm"
+              >
+                <Text size="xs" mb={8}>
+                  Your conversations are hidden due to a Supabase database bug. Run the SQL fix once to permanently repair it.
+                </Text>
+                <Button
+                  size="xs"
+                  leftSection={<IconDatabase size={13} />}
+                  style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}
+                  component="a"
+                  href="/settings"
+                  onClick={e => { e.preventDefault(); window.location.href = '/settings?tab=database' }}
+                >
+                  Go to Settings → Database
+                </Button>
+              </Alert>
+              <Text size="xs" c="dimmed" ta="center">Steps: Settings → Database tab → Copy SQL → Run in Supabase</Text>
+            </Box>
           ) : (
             filteredRooms.map(room => (
               <RoomItem
