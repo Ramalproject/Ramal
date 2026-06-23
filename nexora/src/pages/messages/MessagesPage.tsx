@@ -315,6 +315,17 @@ export default function MessagesPage() {
   const { data: messages = [], isLoading: msgsLoading } = useMessages(activeRoomId ?? '')
   useRealtimeMessages(activeRoomId ?? '')
 
+  // Detect whether the DB SQL fix has been applied (get_my_rooms RPC exists)
+  const { data: rpcWorking } = useQuery({
+    queryKey: ['rpc-check', authUser?.id],
+    queryFn: async () => {
+      const { error } = await supabase.rpc('get_my_rooms', { p_user_id: authUser!.id })
+      return !error || !error.message?.toLowerCase().includes('function')
+    },
+    enabled: !!authUser?.id,
+    staleTime: 1000 * 60 * 5,
+  })
+
   // When the rooms list is empty (getRooms RLS issue) but we have an active room,
   // fetch the other participant directly so the header doesn't show "Unknown"
   const activeRoom = rooms.find(r => r.id === activeRoomId)
@@ -519,26 +530,31 @@ export default function MessagesPage() {
             <Center py="xl"><Loader size="sm" color="violet" /></Center>
           ) : filteredRooms.length === 0 ? (
             <Box p="md">
-              <Alert
-                color="orange"
-                icon={<IconAlertTriangle size={16} />}
-                title="Database fix needed"
-                radius="md"
-                mb="sm"
-              >
-                <Text size="xs" mb={8}>
-                  Your conversations are hidden due to a Supabase database bug. Run the SQL fix once to permanently repair it.
-                </Text>
-                <Button
-                  size="xs"
-                  leftSection={<IconDatabase size={13} />}
-                  style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}
-                  onClick={() => navigate('/settings?tab=database')}
-                >
-                  Go to Settings → Database
-                </Button>
-              </Alert>
-              <Text size="xs" c="dimmed" ta="center">Steps: Settings → Database tab → Copy SQL → Run in Supabase</Text>
+              {rpcWorking === false ? (
+                <>
+                  <Alert color="orange" icon={<IconAlertTriangle size={16} />} title="Database fix needed" radius="md" mb="sm">
+                    <Text size="xs" mb={8}>
+                      Your conversations are hidden due to a Supabase database bug. Run the SQL fix once to permanently repair it.
+                    </Text>
+                    <Button size="xs" leftSection={<IconDatabase size={13} />}
+                      style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}
+                      onClick={() => navigate('/settings?tab=database')}>
+                      Go to Settings → Database
+                    </Button>
+                  </Alert>
+                  <Text size="xs" c="dimmed" ta="center">Steps: Settings → Database tab → Copy SQL → Run in Supabase</Text>
+                </>
+              ) : (
+                <Stack align="center" gap="xs" pt="xl">
+                  <IconMessage size={40} color="var(--nex-subtle)" />
+                  <Text c="dimmed" size="sm" ta="center">No conversations yet</Text>
+                  <Text c="dimmed" size="xs" ta="center">Click the icon above to start a new chat</Text>
+                  <Button size="xs" variant="light" color="violet" mt={4}
+                    onClick={() => setNewChatOpen(true)}>
+                    Start a conversation
+                  </Button>
+                </Stack>
+              )}
             </Box>
           ) : (
             filteredRooms.map(room => (
