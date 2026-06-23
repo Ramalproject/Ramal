@@ -9,7 +9,7 @@ import {
   IconClock, IconCurrencyDollar, IconEye, IconChevronDown,
   IconLock, IconWorld, IconUserCheck, IconSparkles,
 } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { notifications } from '@mantine/notifications'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -51,6 +51,31 @@ export default function CreatePostModal({ opened, onClose }: Props) {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
   const [visibility, setVisibility] = useState('public')
+  const [mediaUrls, setMediaUrls] = useState<string[]>([])
+  const [uploadingMedia, setUploadingMedia] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleMediaSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).slice(0, 4 - mediaUrls.length)
+    if (!files.length || !user) return
+    setUploadingMedia(true)
+    try {
+      const urls = await Promise.all(files.map(async (file) => {
+        const ext = file.name.split('.').pop()
+        const path = `post-media/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error } = await supabase.storage.from('avatars').upload(path, file)
+        if (error) throw error
+        const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+        return data.publicUrl
+      }))
+      setMediaUrls(prev => [...prev, ...urls].slice(0, 4))
+    } catch {
+      notifications.show({ title: 'Upload failed', message: 'Could not upload — check Supabase storage settings', color: 'red' })
+    } finally {
+      setUploadingMedia(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
   const [boostEnabled, setBoostEnabled] = useState(false)
   const [boostGoal, setBoostGoal] = useState('reach')
   const [boostAudience, setBoostAudience] = useState('auto')
@@ -66,8 +91,9 @@ export default function CreatePostModal({ opened, onClose }: Props) {
     const { error } = await supabase.from('posts').insert({
       content: content.trim(),
       author_id: user.id,
-      post_type: 'text',
+      post_type: mediaUrls.length > 0 ? 'image' : 'text',
       visibility,
+      media_urls: mediaUrls,
       likes_count: 0,
       comments_count: 0,
       shares_count: 0,
@@ -85,6 +111,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
       })
       qc.invalidateQueries({ queryKey: ['posts'] })
       setContent('')
+      setMediaUrls([])
       setBoostEnabled(false)
       onClose()
     }
@@ -145,6 +172,38 @@ export default function CreatePostModal({ opened, onClose }: Props) {
       </Box>
 
       <Box p="lg">
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          style={{ display: 'none' }}
+          onChange={handleMediaSelect}
+        />
+
+        {/* Media preview grid */}
+        {mediaUrls.length > 0 && (
+          <Box style={{
+            display: 'grid',
+            gridTemplateColumns: mediaUrls.length === 1 ? '1fr' : '1fr 1fr',
+            gap: 6, marginBottom: 12,
+          }}>
+            {mediaUrls.map((url, i) => (
+              <Box key={i} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', aspectRatio: '16/9' }}>
+                <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                <ActionIcon
+                  size="sm" radius="xl"
+                  style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.7)' }}
+                  onClick={() => setMediaUrls(prev => prev.filter((_, j) => j !== i))}
+                >
+                  ✕
+                </ActionIcon>
+              </Box>
+            ))}
+          </Box>
+        )}
+
         {/* Text area */}
         <Textarea
           placeholder="What's on your mind? Share something amazing..."
@@ -181,8 +240,18 @@ export default function CreatePostModal({ opened, onClose }: Props) {
           <Group justify="space-between" align="center">
             <Text size="xs" c="dimmed" fw={500}>Add to your post</Text>
             <Group gap={4}>
+              <Tooltip label={mediaUrls.length >= 4 ? 'Max 4 photos' : 'Photo/Video'} withArrow>
+                <ActionIcon
+                  variant="subtle" radius="xl" size={34}
+                  style={{ color: '#22c55e' }}
+                  loading={uploadingMedia}
+                  disabled={mediaUrls.length >= 4}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <IconPhoto size={18} />
+                </ActionIcon>
+              </Tooltip>
               {[
-                { icon: IconPhoto, label: 'Photo/Video', color: '#22c55e' },
                 { icon: IconMoodSmile, label: 'Feeling', color: '#f59e0b' },
                 { icon: IconMapPin, label: 'Location', color: '#ef4444' },
                 { icon: IconUsers, label: 'Tag People', color: '#06b6d4' },
@@ -399,7 +468,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
           fullWidth
           onClick={handleSubmit}
           loading={loading}
-          disabled={!content.trim()}
+          disabled={!content.trim() && mediaUrls.length === 0}
           size="md"
           radius="xl"
           leftSection={boostEnabled ? <IconRocket size={16} /> : undefined}
@@ -410,7 +479,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
             border: 'none',
             fontWeight: 700,
             fontSize: '0.95rem',
-            opacity: !content.trim() ? 0.5 : 1,
+            opacity: (!content.trim() && mediaUrls.length === 0) ? 0.5 : 1,
           }}
         >
           {boostEnabled ? `Publish & Boost · $${totalSpend}` : 'Publish Post'}
