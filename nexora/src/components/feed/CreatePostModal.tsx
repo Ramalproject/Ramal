@@ -7,9 +7,9 @@ import {
   IconPhoto, IconMoodSmile, IconMapPin, IconUsers,
   IconRocket, IconTarget, IconMessage2, IconTrendingUp,
   IconClock, IconCurrencyDollar, IconEye, IconChevronDown,
-  IconLock, IconWorld, IconUserCheck, IconSparkles, IconX, IconCheck,
+  IconLock, IconWorld, IconUserCheck, IconSparkles, IconX, IconCheck, IconCurrentLocation,
 } from '@tabler/icons-react'
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { notifications } from '@mantine/notifications'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -64,6 +64,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
   const [tagOpen, setTagOpen] = useState(false)
   const [tagQuery, setTagQuery] = useState('')
   const [tagResults, setTagResults] = useState<{ id: string; username: string; full_name: string; avatar_url: string | null }[]>([])
+  const [detectingLocation, setDetectingLocation] = useState(false)
   const [boostEnabled, setBoostEnabled] = useState(false)
   const [boostGoal, setBoostGoal] = useState('reach')
   const [boostAudience, setBoostAudience] = useState('auto')
@@ -145,6 +146,40 @@ export default function CreatePostModal({ opened, onClose }: Props) {
       handleClose()
     }
   }
+
+  const detectGPS = useCallback(() => {
+    if (!navigator.geolocation) {
+      notifications.show({ title: 'Not supported', message: 'Your browser does not support geolocation', color: 'orange' })
+      return
+    }
+    setDetectingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`,
+            { headers: { 'Accept-Language': 'en' } }
+          )
+          const json = await res.json()
+          const a = json.address ?? {}
+          const city = a.city ?? a.town ?? a.village ?? a.county ?? ''
+          const country = a.country ?? ''
+          const place = [city, country].filter(Boolean).join(', ')
+          setLocationText(place || `${coords.latitude.toFixed(3)}, ${coords.longitude.toFixed(3)}`)
+        } catch {
+          setLocationText(`${coords.latitude.toFixed(3)}, ${coords.longitude.toFixed(3)}`)
+        } finally {
+          setDetectingLocation(false)
+          setLocationOpen(false)
+        }
+      },
+      () => {
+        setDetectingLocation(false)
+        notifications.show({ title: 'Location denied', message: 'Allow location access in your browser settings', color: 'red' })
+      },
+      { timeout: 10000 }
+    )
+  }, [])
 
   const VisIcon = visibility === 'public' ? IconWorld : visibility === 'connections' ? IconUserCheck : IconLock
   const canPost = content.trim().length > 0 || mediaUrls.length > 0
@@ -330,8 +365,17 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                       </ActionIcon>
                     </Tooltip>
                   </Popover.Target>
-                  <Popover.Dropdown style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-subtle)', padding: 12, minWidth: 220 }}>
+                  <Popover.Dropdown style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-subtle)', padding: 12, minWidth: 240 }}>
                     <Text size="xs" c="dimmed" mb={8} fw={600}>Add location</Text>
+                    <Button
+                      fullWidth size="xs" variant="light" color="red" radius="md" mb={8}
+                      leftSection={<IconCurrentLocation size={13} />}
+                      loading={detectingLocation}
+                      onClick={detectGPS}
+                    >
+                      Use my current location
+                    </Button>
+                    <Text size="xs" c="dimmed" ta="center" mb={8}>or type manually</Text>
                     <Group gap={6}>
                       <TextInput
                         placeholder="City, country..."
@@ -341,7 +385,6 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                         size="xs"
                         style={{ flex: 1 }}
                         styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)' } }}
-                        autoFocus
                       />
                       <ActionIcon size={28} style={{ background: '#7c3aed' }}
                         onClick={() => { if (locationInput.trim()) { setLocationText(locationInput.trim()); setLocationInput(''); setLocationOpen(false) } }}>
