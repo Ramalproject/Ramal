@@ -99,8 +99,9 @@ export default function CreatePostModal({ opened, onClose }: Props) {
 
   async function handleTagSearch(q: string) {
     setTagQuery(q)
-    if (q.length < 2) { setTagResults([]); return }
-    const results = await profileService.searchProfiles(q, 6)
+    const clean = q.replace(/^@+/, '').trim()
+    if (clean.length < 1) { setTagResults([]); return }
+    const results = await profileService.searchProfiles(clean, 6)
     setTagResults(results.filter(p => p.id !== user?.id) as typeof tagResults)
   }
 
