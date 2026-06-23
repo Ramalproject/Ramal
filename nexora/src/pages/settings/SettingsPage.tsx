@@ -1,5 +1,5 @@
-import { Box, Title, Tabs, TextInput, Textarea, Button, Stack, Group, Text, PasswordInput, Switch, Paper, Badge, Alert } from '@mantine/core'
-import { IconUser, IconKey, IconBell, IconShield, IconSettings } from '@tabler/icons-react'
+import { Box, Title, Tabs, TextInput, Textarea, Button, Stack, Group, Text, PasswordInput, Switch, Paper, Badge, Alert, CopyButton } from '@mantine/core'
+import { IconUser, IconKey, IconBell, IconShield, IconSettings, IconDatabase } from '@tabler/icons-react'
 import { useState } from 'react'
 import { notifications } from '@mantine/notifications'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -10,6 +10,32 @@ const OPENAI_KEY_STORAGE = 'nexora_openai_api_key'
 
 const inputStyle = { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' as const }
 const labelStyle = { color: '#8892b0' as const }
+
+const FIX_MESSAGING_SQL = `-- Fix Messaging — run once in Supabase SQL Editor
+DROP POLICY IF EXISTS "users can see participants in their rooms" ON room_participants;
+CREATE POLICY "users can see participants in their rooms" ON room_participants FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "participants can see messages" ON messages;
+CREATE POLICY "participants can see messages" ON messages FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "participants can send messages" ON messages;
+CREATE POLICY "participants can send messages" ON messages FOR INSERT WITH CHECK (sender_id = auth.uid());
+
+CREATE OR REPLACE FUNCTION send_message(
+  p_room_id uuid, p_sender_id uuid, p_content text,
+  p_message_type text DEFAULT 'text', p_reply_to_id uuid DEFAULT NULL,
+  p_attachment_url text DEFAULT NULL, p_attachment_name text DEFAULT NULL,
+  p_attachment_type text DEFAULT NULL, p_duration int DEFAULT NULL
+) RETURNS json LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_msg_id uuid; v_result json;
+BEGIN
+  IF auth.uid() IS NULL OR auth.uid() != p_sender_id THEN RAISE EXCEPTION 'Unauthorized'; END IF;
+  INSERT INTO messages (room_id, sender_id, content, message_type, reply_to_id, attachment_url, attachment_name, attachment_type, duration, is_deleted)
+  VALUES (p_room_id, p_sender_id, p_content, COALESCE(p_message_type,'text'), p_reply_to_id, p_attachment_url, p_attachment_name, p_attachment_type, p_duration, false)
+  RETURNING id INTO v_msg_id;
+  UPDATE message_rooms SET updated_at = now() WHERE id = p_room_id;
+  SELECT json_build_object('id',m.id,'room_id',m.room_id,'sender_id',m.sender_id,'content',m.content,'message_type',m.message_type,'attachment_url',m.attachment_url,'attachment_name',m.attachment_name,'attachment_type',m.attachment_type,'duration',m.duration,'reply_to_id',m.reply_to_id,'is_deleted',m.is_deleted,'deleted_at',m.deleted_at,'pinned_at',m.pinned_at,'created_at',m.created_at,'updated_at',m.updated_at,'sender',(SELECT json_build_object('id',p.id,'full_name',p.full_name,'username',p.username,'avatar_url',p.avatar_url,'plan',p.plan) FROM profiles p WHERE p.id=m.sender_id),'reactions','[]'::json,'reply_to',NULL) INTO v_result FROM messages m WHERE m.id=v_msg_id;
+  RETURN v_result;
+END;
+$$;`
 
 export default function SettingsPage() {
   const { profile, user, setProfile } = useAuthStore()
@@ -70,6 +96,7 @@ export default function SettingsPage() {
           <Tabs.Tab value="account" leftSection={<IconShield size={14} />}>Account</Tabs.Tab>
           <Tabs.Tab value="apikeys" leftSection={<IconKey size={14} />}>API Keys</Tabs.Tab>
           <Tabs.Tab value="notifications" leftSection={<IconBell size={14} />}>Notifications</Tabs.Tab>
+          <Tabs.Tab value="database" leftSection={<IconDatabase size={14} />}>Database</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="profile">
@@ -187,6 +214,48 @@ export default function SettingsPage() {
                   }}
                 />
               ))}
+            </Stack>
+          </Paper>
+        </Tabs.Panel>
+        <Tabs.Panel value="database">
+          <Paper p="xl" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
+            <Stack>
+              <Alert color="red" title="Messaging Fix Required" radius="md">
+                If messages fail to send with "infinite recursion" error, run the SQL below in Supabase SQL Editor to fix it.
+              </Alert>
+              <Text fw={600}>Steps:</Text>
+              <Text size="sm" c="dimmed">1. Go to supabase.com → your project → SQL Editor</Text>
+              <Text size="sm" c="dimmed">2. Click "New query", paste the SQL below, click Run</Text>
+              <Text size="sm" c="dimmed">3. You should see "Success. No rows returned"</Text>
+              <Box style={{ position: 'relative' }}>
+                <Box
+                  style={{
+                    background: 'var(--nex-input)',
+                    border: '1px solid var(--nex-border)',
+                    borderRadius: 8,
+                    padding: '12px',
+                    fontFamily: 'monospace',
+                    fontSize: '11px',
+                    whiteSpace: 'pre',
+                    overflowX: 'auto',
+                    maxHeight: 300,
+                    overflowY: 'auto',
+                    color: '#a0aec0',
+                  }}
+                >
+                  {FIX_MESSAGING_SQL}
+                </Box>
+              </Box>
+              <CopyButton value={FIX_MESSAGING_SQL}>
+                {({ copied, copy }) => (
+                  <Button
+                    onClick={copy}
+                    style={{ background: copied ? '#22c55e' : 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}
+                  >
+                    {copied ? 'Copied!' : 'Copy SQL'}
+                  </Button>
+                )}
+              </CopyButton>
             </Stack>
           </Paper>
         </Tabs.Panel>
