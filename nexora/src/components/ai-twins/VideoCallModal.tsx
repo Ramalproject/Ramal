@@ -17,38 +17,18 @@ interface ISpeechRecognition {
   stop: () => void
 }
 
-interface Message { role: 'user' | 'assistant'; text: string }
-
 interface Props {
   twin: AiTwin
   onEnd: () => void
 }
 
-function Waveform({ active, color = '#7c3aed' }: { active: boolean; color?: string }) {
-  const heights = [3, 5, 8, 5, 10, 7, 4, 9, 6, 8, 4, 6, 10, 5, 7, 3, 8, 6, 4, 7]
-  return (
-    <Box style={{ display: 'flex', alignItems: 'center', gap: 3, height: 36 }}>
-      {heights.map((h, i) => (
-        <Box key={i} style={{
-          width: 3,
-          height: active ? h * 3 : 4,
-          borderRadius: 2,
-          background: active ? `${color}${Math.round(0.5 + (h / 10) * 0.5 * 255).toString(16).padStart(2, '0')}` : 'rgba(255,255,255,0.12)',
-          transition: `height ${0.15 + (i % 5) * 0.05}s ease`,
-          animation: active ? `wave-${i % 4} ${0.5 + (i % 3) * 0.2}s ease-in-out infinite alternate` : 'none',
-        }} />
-      ))}
-    </Box>
-  )
-}
-
 function ThinkingDots() {
   return (
-    <Box style={{ display: 'flex', gap: 4, alignItems: 'center', padding: '4px 0' }}>
+    <Box style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
       {[0, 1, 2].map(i => (
         <Box key={i} style={{
-          width: 7, height: 7, borderRadius: '50%',
-          background: 'rgba(167,139,250,0.7)',
+          width: 8, height: 8, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.8)',
           animation: `dot-bounce 1.2s ${i * 0.2}s ease-in-out infinite`,
         }} />
       ))}
@@ -63,38 +43,26 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
   const [isListening, setIsListening] = useState(false)
   const [isThinking, setIsThinking] = useState(false)
   const [duration, setDuration] = useState(0)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [bgPhase, setBgPhase] = useState(0)
+  const [, setMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([])
+  const [lastSubtitle, setLastSubtitle] = useState('')
+  const [subtitleRole, setSubtitleRole] = useState<'user' | 'assistant'>('assistant')
 
   const userVideoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const recognitionRef = useRef<ISpeechRecognition | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const bgTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const historyRef = useRef<{ role: 'user' | 'assistant'; content: string }[]>([])
   const greeted = useRef(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-
-  // Auto-scroll messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  const subtitleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     timerRef.current = setInterval(() => setDuration(d => d + 1), 1000)
-    bgTimerRef.current = setInterval(() => setBgPhase(p => (p + 1) % 4), 4000)
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-      if (bgTimerRef.current) clearInterval(bgTimerRef.current)
-    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [])
 
   useEffect(() => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setIsCameraOn(false)
-      return
-    }
+    if (!navigator.mediaDevices?.getUserMedia) { setIsCameraOn(false); return }
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
         streamRef.current = stream
@@ -106,6 +74,13 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
       })
     return () => { streamRef.current?.getTracks().forEach(t => t.stop()) }
   }, [])
+
+  function showSubtitle(text: string, role: 'user' | 'assistant') {
+    setLastSubtitle(text)
+    setSubtitleRole(role)
+    if (subtitleTimer.current) clearTimeout(subtitleTimer.current)
+    subtitleTimer.current = setTimeout(() => setLastSubtitle(''), 6000)
+  }
 
   const speakText = useCallback(async (text: string, apiKey: string) => {
     const ttsRes = await fetch('https://api.openai.com/v1/audio/speech', {
@@ -123,30 +98,28 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
       audio.onerror = () => resolve()
       audio.play().catch(() => resolve())
     })
-  }, [twin])
+  }, [])
 
   const sendToAI = useCallback(async (userText: string) => {
     const apiKey = localStorage.getItem(OPENAI_KEY_STORAGE)
     if (!apiKey) return
 
+    showSubtitle(userText, 'user')
     historyRef.current.push({ role: 'user', content: userText })
     setMessages(prev => [...prev, { role: 'user', text: userText }])
     setIsThinking(true)
 
     try {
-      const systemPrompt = `You are ${twin.name} on a live video call. ${twin.bio ?? ''} Personality: ${twin.personality ?? 'warm, engaging and natural'}. Speak naturally like a real person in a video call — casual, friendly, brief (1-2 sentences). React to what the person just said. Be genuinely interested, ask a follow-up occasionally. Never say "As an AI" — you ARE ${twin.name}.`
+      const systemPrompt = `You are ${twin.name} on a live video call with a friend. ${twin.bio ?? ''} Personality: ${twin.personality ?? 'warm, natural, friendly'}. Talk exactly like a real person on a video call — casual, short sentences, warm. React naturally to what they say, ask follow-up questions. Never say "As an AI". You ARE ${twin.name}, a real person on video.`
 
       const chatRes = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...historyRef.current,
-          ],
-          max_tokens: 90,
-          temperature: 0.85,
+          messages: [{ role: 'system', content: systemPrompt }, ...historyRef.current],
+          max_tokens: 80,
+          temperature: 0.9,
         })
       })
       const chatData = await chatRes.json() as { choices: { message: { content: string } }[] }
@@ -156,6 +129,7 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
       setMessages(prev => [...prev, { role: 'assistant', text: reply }])
       setIsThinking(false)
       setIsSpeaking(true)
+      showSubtitle(reply, 'assistant')
 
       await speakText(reply, apiKey)
       setIsSpeaking(false)
@@ -165,354 +139,292 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
     }
   }, [twin, speakText])
 
-  // Greet the user on call start
+  // Greet on start
   useEffect(() => {
     if (greeted.current) return
     greeted.current = true
     const apiKey = localStorage.getItem(OPENAI_KEY_STORAGE)
     if (!apiKey) return
-
     const greetings = [
-      `Hey! So great to finally connect on video! How's your day going?`,
-      `Oh hey! You picked up — awesome! How are you doing?`,
-      `Hey there! Nice to see you! What's been going on with you?`,
+      `Hey! So nice to see you — how are you doing?`,
+      `Hey! You picked up! How's everything going?`,
+      `Oh hey! Great to see you! What's up?`,
     ]
     const greeting = greetings[Math.floor(Math.random() * greetings.length)]
-
     setTimeout(async () => {
       historyRef.current.push({ role: 'assistant', content: greeting })
       setMessages([{ role: 'assistant', text: greeting }])
       setIsSpeaking(true)
+      showSubtitle(greeting, 'assistant')
       await speakText(greeting, apiKey)
       setIsSpeaking(false)
-    }, 1200)
+    }, 1000)
   }, [speakText])
 
-  // Speech recognition — only restart when not speaking
+  // Speech recognition — only when not speaking/thinking
   useEffect(() => {
-    if (isSpeaking || isThinking) {
-      recognitionRef.current?.stop()
-      return
-    }
-    type SRConstructor = new () => ISpeechRecognition
-    const SR: SRConstructor | undefined =
-      (window as typeof window & { SpeechRecognition?: SRConstructor; webkitSpeechRecognition?: SRConstructor }).SpeechRecognition
-      ?? (window as typeof window & { webkitSpeechRecognition?: SRConstructor }).webkitSpeechRecognition
+    if (isSpeaking || isThinking) { recognitionRef.current?.stop(); return }
+    type SRCtor = new () => ISpeechRecognition
+    const SR =
+      (window as typeof window & { SpeechRecognition?: SRCtor }).SpeechRecognition
+      ?? (window as typeof window & { webkitSpeechRecognition?: SRCtor }).webkitSpeechRecognition
     if (!SR) return
-
-    const recognition = new SR()
-    recognition.continuous = false
-    recognition.interimResults = false
-    recognition.lang = 'en-US'
-    recognition.onstart = () => setIsListening(true)
-    recognition.onend = () => { setIsListening(false) }
-    recognition.onresult = (e: SpeechRecognitionEvent) => {
+    const r = new SR()
+    r.continuous = false
+    r.interimResults = false
+    r.lang = 'en-US'
+    r.onstart = () => setIsListening(true)
+    r.onend = () => setIsListening(false)
+    r.onresult = (e: SpeechRecognitionEvent) => {
       const text = e.results[e.results.length - 1][0].transcript.trim()
       if (text) sendToAI(text)
     }
-    recognitionRef.current = recognition
-    try { recognition.start() } catch { /* already started */ }
-    return () => { try { recognition.stop() } catch { /* already stopped */ } }
+    recognitionRef.current = r
+    try { r.start() } catch { /* already started */ }
+    return () => { try { r.stop() } catch { /* already stopped */ } }
   }, [isSpeaking, isThinking, sendToAI])
 
   function toggleMute() {
-    setIsMuted(m => {
-      streamRef.current?.getAudioTracks().forEach(t => { t.enabled = m })
-      return !m
-    })
+    setIsMuted(m => { streamRef.current?.getAudioTracks().forEach(t => { t.enabled = m }); return !m })
   }
-
   function toggleCamera() {
-    setIsCameraOn(c => {
-      streamRef.current?.getVideoTracks().forEach(t => { t.enabled = !c })
-      return !c
-    })
+    setIsCameraOn(c => { streamRef.current?.getVideoTracks().forEach(t => { t.enabled = !c }); return !c })
   }
-
   function handleEnd() {
     streamRef.current?.getTracks().forEach(t => t.stop())
     recognitionRef.current?.stop()
     audioRef.current?.pause()
     if (timerRef.current) clearInterval(timerRef.current)
-    if (bgTimerRef.current) clearInterval(bgTimerRef.current)
     onEnd()
   }
 
   const mins = Math.floor(duration / 60).toString().padStart(2, '0')
   const secs = (duration % 60).toString().padStart(2, '0')
 
-  const bgGradients = [
-    'radial-gradient(ellipse at 30% 40%, #1a0a2e 0%, #050510 60%)',
-    'radial-gradient(ellipse at 70% 30%, #0a1a2e 0%, #050510 60%)',
-    'radial-gradient(ellipse at 50% 65%, #0e0a2e 0%, #050510 60%)',
-    'radial-gradient(ellipse at 20% 70%, #0a0e2e 0%, #050510 60%)',
-  ]
-
-  // Show only the last 4 messages
-  const visibleMessages = messages.slice(-4)
-
   return (
-    <Box style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      background: bgGradients[bgPhase],
-      transition: 'background 4s ease',
-      display: 'flex', flexDirection: 'column',
-      overflow: 'hidden',
-    }}>
-      {/* Ambient glow */}
-      <Box style={{
-        position: 'absolute',
-        top: '10%', left: '50%', transform: 'translateX(-50%)',
-        width: 420, height: 420, borderRadius: '50%',
-        background: isSpeaking
-          ? 'radial-gradient(circle, rgba(34,197,94,0.13) 0%, transparent 70%)'
-          : 'radial-gradient(circle, rgba(124,58,237,0.09) 0%, transparent 70%)',
-        transition: 'background 0.6s ease',
-        pointerEvents: 'none',
-      }} />
+    <Box style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#000', overflow: 'hidden' }}>
 
-      {/* Duration */}
-      <Box style={{ position: 'absolute', top: 20, left: 24, zIndex: 10 }}>
+      {/* ── FULL-SCREEN AI VIDEO ── */}
+      <Box style={{ position: 'absolute', inset: 0 }}>
+        {twin.avatar_url ? (
+          <img
+            src={twin.avatar_url}
+            alt={twin.name}
+            style={{
+              width: '100%', height: '100%',
+              objectFit: 'cover', objectPosition: 'center top',
+              filter: isSpeaking ? 'brightness(1.05)' : 'brightness(0.92)',
+              transition: 'filter 0.4s ease',
+            }}
+          />
+        ) : (
+          /* No photo — gradient with centred avatar */
+          <Box style={{
+            width: '100%', height: '100%',
+            background: 'linear-gradient(160deg, #1a0a2e 0%, #0d0820 40%, #050510 100%)',
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 16,
+          }}>
+            <Box style={{
+              width: 160, height: 160, borderRadius: '50%',
+              background: 'rgba(124,58,237,0.18)',
+              border: '3px solid rgba(124,58,237,0.35)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              animation: isSpeaking ? 'avatar-pulse 1s ease-in-out infinite' : 'none',
+            }}>
+              <IconRobot size={80} color="#7c3aed" />
+            </Box>
+            <Text c="dimmed" size="sm">Upload a photo to your AI Twin</Text>
+          </Box>
+        )}
+
+        {/* Speaking green wash */}
+        <Box style={{
+          position: 'absolute', inset: 0,
+          background: isSpeaking ? 'rgba(34,197,94,0.07)' : 'transparent',
+          transition: 'background 0.5s ease', pointerEvents: 'none',
+        }} />
+
+        {/* Dark vignette at top & bottom */}
+        <Box style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 22%, transparent 55%, rgba(0,0,0,0.7) 100%)',
+        }} />
+
+        {/* Speaking pulse border */}
+        {isSpeaking && (
+          <Box style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            boxShadow: 'inset 0 0 0 4px rgba(34,197,94,0.7)',
+            animation: 'border-pulse 1s ease-in-out infinite',
+            borderRadius: 0,
+          }} />
+        )}
+      </Box>
+
+      {/* ── TOP BAR ── */}
+      <Box style={{
+        position: 'absolute', top: 0, left: 0, right: 0,
+        padding: '20px 24px 0',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+        zIndex: 10,
+      }}>
+        {/* Name + status */}
+        <Box>
+          <Group gap={8} align="center">
+            <Box style={{
+              width: 10, height: 10, borderRadius: '50%',
+              background: isSpeaking ? '#22c55e' : isListening ? '#a78bfa' : '#64748b',
+              boxShadow: isSpeaking ? '0 0 8px #22c55e' : 'none',
+              transition: 'all 0.3s ease',
+            }} />
+            <Text fw={700} c="white" size="lg" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
+              {twin.name}
+            </Text>
+            <Text size="sm" style={{ color: isSpeaking ? '#22c55e' : isThinking ? '#a78bfa' : 'rgba(255,255,255,0.6)' }}>
+              {isSpeaking ? 'Speaking' : isThinking ? 'Thinking...' : isListening ? 'Listening to you' : 'Connected'}
+            </Text>
+          </Group>
+        </Box>
+
+        {/* Timer */}
         <Text size="sm" fw={600} style={{
-          color: 'rgba(255,255,255,0.75)',
-          background: 'rgba(0,0,0,0.35)',
+          color: 'rgba(255,255,255,0.8)',
+          background: 'rgba(0,0,0,0.4)',
           padding: '4px 12px', borderRadius: 20,
-          backdropFilter: 'blur(10px)',
+          backdropFilter: 'blur(8px)',
           fontVariantNumeric: 'tabular-nums',
         }}>
           {mins}:{secs}
         </Text>
       </Box>
 
-      {/* Signal bars */}
-      <Box style={{ position: 'absolute', top: 22, right: 24, display: 'flex', gap: 2, alignItems: 'flex-end', zIndex: 10 }}>
-        {[4, 7, 10, 13].map((h, i) => (
-          <Box key={i} style={{ width: 3, height: h, background: 'rgba(34,197,94,0.85)', borderRadius: 1 }} />
-        ))}
-      </Box>
-
-      {/* Two-person layout */}
+      {/* ── SUBTITLE / CAPTION BAR ── */}
       <Box style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        paddingTop: 56,
-        paddingBottom: 150,
-        gap: 0,
+        position: 'absolute', bottom: 110, left: 0, right: 0,
+        display: 'flex', justifyContent: 'center',
+        padding: '0 24px',
+        zIndex: 10,
+        minHeight: 56,
+        transition: 'opacity 0.4s ease',
+        opacity: lastSubtitle ? 1 : 0,
       }}>
-        {/* AI video frame */}
-        <Box style={{ position: 'relative', marginBottom: 16 }}>
-          {isSpeaking && (
-            <Box style={{
-              position: 'absolute', inset: -14, borderRadius: 30,
-              background: 'radial-gradient(circle, rgba(34,197,94,0.18) 0%, transparent 70%)',
-              animation: 'ring-pulse 1s ease-in-out infinite',
-              pointerEvents: 'none',
-            }} />
-          )}
-
-          <Box style={{
-            width: 240, height: 310, borderRadius: 22, overflow: 'hidden', position: 'relative',
-            border: isSpeaking
-              ? '3px solid rgba(34,197,94,0.9)'
-              : '3px solid rgba(124,58,237,0.6)',
-            boxShadow: isSpeaking
-              ? '0 0 36px rgba(34,197,94,0.3), 0 8px 40px rgba(0,0,0,0.7)'
-              : '0 0 28px rgba(124,58,237,0.2), 0 8px 40px rgba(0,0,0,0.7)',
-            transition: 'border 0.3s ease, box-shadow 0.3s ease',
-          }}>
-            {twin.avatar_url ? (
-              <img src={twin.avatar_url} alt={twin.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }} />
-            ) : (
-              <Box style={{
-                width: '100%', height: '100%',
-                background: 'linear-gradient(160deg, #1a0a2e 0%, #0d0d2e 50%, #050510 100%)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12,
-              }}>
-                <Box style={{
-                  width: 80, height: 80, borderRadius: '50%',
-                  background: 'rgba(124,58,237,0.2)', border: '3px solid rgba(124,58,237,0.4)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <IconRobot size={40} color="#7c3aed" />
-                </Box>
-              </Box>
-            )}
-
-            {/* Speaking wash */}
-            <Box style={{
-              position: 'absolute', inset: 0,
-              background: isSpeaking ? 'rgba(34,197,94,0.05)' : 'transparent',
-              transition: 'background 0.4s ease', pointerEvents: 'none',
-            }} />
-
-            {/* Name bar */}
-            <Box style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0,
-              background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 100%)',
-              padding: '28px 12px 10px',
-            }}>
-              <Group gap={6} align="center">
-                <Box style={{
-                  width: 7, height: 7, borderRadius: '50%',
-                  background: isSpeaking ? '#22c55e' : isListening ? '#7c3aed' : '#64748b',
-                  boxShadow: isSpeaking ? '0 0 6px #22c55e' : 'none',
-                  transition: 'all 0.3s ease', flexShrink: 0,
-                }} />
-                <Text fw={700} c="white" size="xs">{twin.name}</Text>
-                <Text size="10px" style={{ color: isSpeaking ? '#22c55e' : '#a78bfa', marginLeft: 'auto' }}>
-                  {isSpeaking ? 'Speaking' : isThinking ? 'Thinking...' : 'Connected'}
-                </Text>
-              </Group>
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Waveform — AI speaking or user speaking */}
-        <Box style={{ height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {isThinking
+        <Box style={{
+          maxWidth: 580,
+          background: subtitleRole === 'user'
+            ? 'rgba(124,58,237,0.75)'
+            : 'rgba(0,0,0,0.72)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: 14,
+          padding: '10px 18px',
+          border: subtitleRole === 'user'
+            ? '1px solid rgba(124,58,237,0.4)'
+            : '1px solid rgba(255,255,255,0.12)',
+          textAlign: 'center',
+          transition: 'opacity 0.4s ease',
+        }}>
+          {isThinking && subtitleRole === 'user'
             ? <ThinkingDots />
-            : <Waveform active={isSpeaking} color={isSpeaking ? '#22c55e' : '#7c3aed'} />
+            : <Text size="md" c="white" fw={500} style={{ lineHeight: 1.5, textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
+                {lastSubtitle}
+              </Text>
           }
         </Box>
-
-        {/* Conversation bubbles */}
-        <Box style={{
-          maxWidth: 480, width: '100%', padding: '0 20px',
-          display: 'flex', flexDirection: 'column', gap: 6,
-          marginTop: 12,
-        }}>
-          {visibleMessages.map((msg, i) => (
-            <Box key={i} style={{
-              display: 'flex',
-              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            }}>
-              <Box style={{
-                maxWidth: '82%',
-                background: msg.role === 'user'
-                  ? 'rgba(124,58,237,0.22)'
-                  : 'rgba(255,255,255,0.07)',
-                backdropFilter: 'blur(10px)',
-                borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                padding: '8px 13px',
-                border: msg.role === 'user'
-                  ? '1px solid rgba(124,58,237,0.25)'
-                  : '1px solid rgba(255,255,255,0.09)',
-                opacity: i < visibleMessages.length - 2 ? 0.55 : 1,
-                transition: 'opacity 0.3s ease',
-              }}>
-                <Text size="sm" style={{ color: 'rgba(255,255,255,0.9)', lineHeight: 1.5 }}>
-                  {msg.text}
-                </Text>
-              </Box>
-            </Box>
-          ))}
-          {isThinking && (
-            <Box style={{ display: 'flex', justifyContent: 'flex-start' }}>
-              <Box style={{
-                background: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(10px)',
-                borderRadius: '16px 16px 16px 4px', padding: '8px 16px',
-                border: '1px solid rgba(255,255,255,0.09)',
-              }}>
-                <ThinkingDots />
-              </Box>
-            </Box>
-          )}
-          <div ref={messagesEndRef} />
-        </Box>
       </Box>
 
-      {/* User PiP — bottom left so it doesn't overlap controls */}
+      {/* ── USER PiP ── */}
       <Box style={{
-        position: 'absolute', bottom: 104, right: 16,
-        width: 160, height: 116, borderRadius: 14,
-        overflow: 'hidden',
-        border: isListening ? '2px solid rgba(124,58,237,0.8)' : '2px solid rgba(255,255,255,0.12)',
+        position: 'absolute', bottom: 110, right: 18,
+        width: 140, height: 196,
+        borderRadius: 16, overflow: 'hidden',
+        border: isListening ? '2px solid rgba(167,139,250,0.9)' : '2px solid rgba(255,255,255,0.18)',
         background: '#0d0d1a',
-        boxShadow: isListening ? '0 0 16px rgba(124,58,237,0.3)' : '0 8px 28px rgba(0,0,0,0.5)',
-        transition: 'border 0.3s ease, box-shadow 0.3s ease',
+        boxShadow: isListening
+          ? '0 0 20px rgba(167,139,250,0.4), 0 8px 28px rgba(0,0,0,0.6)'
+          : '0 8px 28px rgba(0,0,0,0.6)',
+        transition: 'border 0.3s, box-shadow 0.3s',
+        zIndex: 20,
       }}>
         {isCameraOn
           ? <video ref={userVideoRef} autoPlay muted playsInline
               style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
-          : <Box style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4 }}>
-              <IconVideoOff size={24} color="#4a4a6a" />
+          : <Box style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 6 }}>
+              <IconVideoOff size={26} color="#4a4a6a" />
               <Text size="xs" c="dimmed">Camera off</Text>
             </Box>
         }
+        {/* You label */}
         <Box style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
-          padding: '12px 8px 5px',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.75), transparent)',
+          padding: '14px 8px 5px',
           display: 'flex', alignItems: 'center', gap: 5,
         }}>
           {isListening && (
             <Box style={{
-              width: 6, height: 6, borderRadius: '50%',
-              background: '#a78bfa', animation: 'listen-pulse 1s ease-in-out infinite',
+              width: 6, height: 6, borderRadius: '50%', background: '#a78bfa',
+              animation: 'listen-pulse 0.9s ease-in-out infinite', flexShrink: 0,
             }} />
           )}
-          <Text size="10px" c="white" fw={600}>{isListening ? 'Listening...' : 'You'}</Text>
+          <Text size="11px" c="white" fw={600}>{isListening ? 'Listening...' : 'You'}</Text>
         </Box>
       </Box>
 
-      {/* Controls */}
+      {/* ── CONTROLS ── */}
       <Box style={{
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        padding: '18px 24px 26px',
-        background: 'linear-gradient(to top, rgba(5,5,16,0.97), transparent)',
+        padding: '14px 24px 28px',
+        background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)',
         display: 'flex', justifyContent: 'center', alignItems: 'center',
+        zIndex: 20,
       }}>
-        <Group gap={14}>
+        <Group gap={16}>
           <Tooltip label={isMuted ? 'Unmute' : 'Mute'} withArrow>
-            <ActionIcon size={52} radius="xl" onClick={toggleMute} style={{
-              background: isMuted ? '#ef4444' : 'rgba(255,255,255,0.13)',
+            <ActionIcon size={56} radius="xl" onClick={toggleMute} style={{
+              background: isMuted ? '#ef4444' : 'rgba(255,255,255,0.15)',
               backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.14)',
+              border: '1px solid rgba(255,255,255,0.18)',
             }}>
-              {isMuted ? <IconMicrophoneOff size={20} color="white" /> : <IconMicrophone size={20} color="white" />}
+              {isMuted ? <IconMicrophoneOff size={22} color="white" /> : <IconMicrophone size={22} color="white" />}
             </ActionIcon>
           </Tooltip>
 
           <Tooltip label={isCameraOn ? 'Turn off camera' : 'Turn on camera'} withArrow>
-            <ActionIcon size={52} radius="xl" onClick={toggleCamera} style={{
-              background: isCameraOn ? 'rgba(255,255,255,0.13)' : '#ef4444',
+            <ActionIcon size={56} radius="xl" onClick={toggleCamera} style={{
+              background: isCameraOn ? 'rgba(255,255,255,0.15)' : '#ef4444',
               backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.14)',
+              border: '1px solid rgba(255,255,255,0.18)',
             }}>
-              {isCameraOn ? <IconVideo size={20} color="white" /> : <IconVideoOff size={20} color="white" />}
+              {isCameraOn ? <IconVideo size={22} color="white" /> : <IconVideoOff size={22} color="white" />}
             </ActionIcon>
           </Tooltip>
 
           <Tooltip label="End call" withArrow>
-            <ActionIcon size={64} radius="xl" onClick={handleEnd} style={{
+            <ActionIcon size={68} radius="xl" onClick={handleEnd} style={{
               background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-              boxShadow: '0 4px 22px rgba(239,68,68,0.45)',
+              boxShadow: '0 4px 24px rgba(239,68,68,0.5)',
             }}>
-              <IconPhone size={26} color="white" style={{ transform: 'rotate(135deg)' }} />
+              <IconPhone size={28} color="white" style={{ transform: 'rotate(135deg)' }} />
             </ActionIcon>
           </Tooltip>
         </Group>
       </Box>
 
       <style>{`
-        @keyframes ring-pulse {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.07); opacity: 0.35; }
+        @keyframes avatar-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(124,58,237,0.4); }
+          50% { box-shadow: 0 0 0 18px rgba(124,58,237,0); }
+        }
+        @keyframes border-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
         }
         @keyframes listen-pulse {
-          0%, 100% { opacity: 0.6; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.15); }
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.25); }
         }
-        @keyframes wave-0 { from { height: 5px; } to { height: 22px; } }
-        @keyframes wave-1 { from { height: 8px; } to { height: 28px; } }
-        @keyframes wave-2 { from { height: 6px; } to { height: 18px; } }
-        @keyframes wave-3 { from { height: 10px; } to { height: 26px; } }
         @keyframes dot-bounce {
-          0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+          0%, 80%, 100% { transform: scale(0.65); opacity: 0.35; }
           40% { transform: scale(1.1); opacity: 1; }
         }
       `}</style>
