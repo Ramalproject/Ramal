@@ -71,7 +71,7 @@ export const messageService = {
   },
 
   async getMessages(roomId: string, page = 0, limit = 50): Promise<Message[]> {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('messages')
       .select(`
         *,
@@ -83,6 +83,7 @@ export const messageService = {
       .order('created_at', { ascending: false })
       .range(page * limit, (page + 1) * limit - 1)
 
+    if (error) throw error
     const messages = (data as Message[]) ?? []
     return messages.reverse()
   },

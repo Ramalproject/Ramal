@@ -1,8 +1,42 @@
 *, *::before, *::after { box-sizing: border-box; }
-:root { color-scheme: dark; }
+
+/* ── Theme tokens ──────────────────────────────────────────── */
+:root,
+[data-mantine-color-scheme="dark"] {
+  color-scheme: dark;
+  --nex-bg: #0a0a14;
+  --nex-surface: #0d0d1a;
+  --nex-surface-alt: #0f0f1a;
+  --nex-border: #1e1e3a;
+  --nex-input: #1a1a2e;
+  --nex-subtle: #2d2d4e;
+  --nex-hover: rgba(255,255,255,0.04);
+  --nex-notif-unread: #130d2a;
+  --nex-notif-border: #3d1e6a;
+  --scrollbar-track: #0f0f1a;
+  --scrollbar-thumb: #2d2d4e;
+  --scrollbar-thumb-hover: #3d3d6e;
+}
+
+[data-mantine-color-scheme="light"] {
+  color-scheme: light;
+  --nex-bg: #f0f2f5;
+  --nex-surface: #ffffff;
+  --nex-surface-alt: #f8fafc;
+  --nex-border: #e2e8f0;
+  --nex-input: #f3f4f6;
+  --nex-subtle: #e2e8f0;
+  --nex-hover: rgba(0,0,0,0.04);
+  --nex-notif-unread: #faf5ff;
+  --nex-notif-border: #ddd6fe;
+  --scrollbar-track: #f1f3f5;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+}
+
 body {
   margin: 0; padding: 0;
-  background-color: #0a0a14;
+  background-color: var(--nex-bg);
   color: #e2e8f0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -10,7 +44,7 @@ body {
 }
 html, body, #root { height: 100%; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #0f0f1a; }
-::-webkit-scrollbar-thumb { background: #2d2d4e; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3d3d6e; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 a { color: inherit; text-decoration: none; }

@@ -38,14 +38,14 @@ export default function CommunitiesPage() {
         placeholder="Search communities..."
         leftSection={<IconSearch size={14} />}
         mb="xl"
-        styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white' } }}
+        styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' } }}
       />
 
       {isLoading ? (
         <Text c="dimmed" ta="center">Loading communities...</Text>
       ) : communities.length === 0 ? (
-        <Paper p="xl" ta="center" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
-          <IconUsers size={48} color="#2d2d4e" />
+        <Paper p="xl" ta="center" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
+          <IconUsers size={48} color="var(--nex-subtle)" />
           <Text c="dimmed" mt="md">No communities yet.</Text>
           <Text c="dimmed" size="sm">Be the first to create one!</Text>
           <Button mt="md" leftSection={<IconPlus size={14} />} style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>
@@ -56,7 +56,7 @@ export default function CommunitiesPage() {
         <Grid>
           {communities.map(c => (
             <Grid.Col key={c.id} span={{ base: 12, sm: 6, md: 4 }}>
-              <Paper p="md" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12, height: '100%' }}>
+              <Paper p="md" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12, height: '100%' }}>
                 <Stack>
                   <Group>
                     <Avatar src={c.avatar_url} radius="md" size={48} style={{ background: '#7c3aed22' }}>

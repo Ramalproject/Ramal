@@ -159,7 +159,7 @@ export default function PostCard({ post }: Props) {
 
   return (
     <>
-      <Paper p="md" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
+      <Paper p="md" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
         {/* Header */}
         <Group mb="sm" justify="space-between" align="flex-start">
           <Group style={{ cursor: 'pointer' }} onClick={() => post.author?.username && navigate(`/profile/${post.author.username}`)}>
@@ -183,9 +183,9 @@ export default function PostCard({ post }: Props) {
               <Menu.Target>
                 <ActionIcon variant="subtle" c="dimmed" size="sm"><IconDots size={16} /></ActionIcon>
               </Menu.Target>
-              <Menu.Dropdown style={{ background: '#141428', border: '1px solid #2d2d4e' }}>
+              <Menu.Dropdown style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-subtle)' }}>
                 <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => { setEditContent(post.content); setEditOpen(true) }} style={{ color: '#e2e8f0' }}>Edit Post</Menu.Item>
-                <Menu.Divider style={{ borderColor: '#2d2d4e' }} />
+                <Menu.Divider style={{ borderColor: 'var(--nex-subtle)' }} />
                 <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={handleDelete} disabled={deletePost.isPending}>Delete Post</Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -233,7 +233,7 @@ export default function PostCard({ post }: Props) {
 
         {/* Comments */}
         {showComments && (
-          <Box mt="sm" style={{ borderTop: '1px solid #1e1e3a', paddingTop: 12 }}>
+          <Box mt="sm" style={{ borderTop: '1px solid var(--nex-border)', paddingTop: 12 }}>
             {authUser && (
               <Group gap={8} mb="sm" align="flex-end">
                 <Avatar src={authUser?.user_metadata?.avatar_url} radius="xl" size={32}>
@@ -246,10 +246,10 @@ export default function PostCard({ post }: Props) {
                   onChange={e => setCommentInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddComment() } }}
                   size="sm"
-                  styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white', borderRadius: 20 } }}
+                  styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white', borderRadius: 20 } }}
                 />
                 <ActionIcon size={32} radius="xl" disabled={!commentInput.trim()} loading={addComment.isPending} onClick={handleAddComment}
-                  style={{ background: commentInput.trim() ? 'linear-gradient(135deg, #7c3aed, #5b21b6)' : '#1a1a2e', flexShrink: 0 }}>
+                  style={{ background: commentInput.trim() ? 'linear-gradient(135deg, #7c3aed, #5b21b6)' : 'var(--nex-input)', flexShrink: 0 }}>
                   <IconSend size={14} color="white" />
                 </ActionIcon>
               </Group>
@@ -260,14 +260,14 @@ export default function PostCard({ post }: Props) {
               <Text c="dimmed" size="xs" ta="center" py="sm">No comments yet. Be the first!</Text>
             ) : (
               <Stack gap={10}>
-                <Divider color="#1e1e3a" />
+                <Divider color="var(--nex-border)" />
                 {comments.map(comment => (
                   <Group key={comment.id} align="flex-start" gap={8}>
                     <Avatar src={comment.author?.avatar_url} radius="xl" size={28} style={{ cursor: 'pointer', flexShrink: 0 }}
                       onClick={() => comment.author?.username && navigate(`/profile/${comment.author.username}`)}>
                       {comment.author?.full_name ? getInitials(comment.author.full_name) : '?'}
                     </Avatar>
-                    <Box style={{ flex: 1, background: '#141428', borderRadius: 12, padding: '6px 12px', border: '1px solid #1e1e3a' }}>
+                    <Box style={{ flex: 1, background: 'var(--nex-surface)', borderRadius: 12, padding: '6px 12px', border: '1px solid var(--nex-border)' }}>
                       <Group gap={6} mb={2}>
                         <Text size="xs" fw={600} c="white">{comment.author?.full_name ?? 'Unknown'}</Text>
                         <Text size="xs" c="dimmed">{timeAgo(comment.created_at)}</Text>
@@ -294,14 +294,14 @@ export default function PostCard({ post }: Props) {
         title={<Group gap={8}><IconBrandFacebook size={18} color="#7c3aed" /><Text fw={600} c="white">Share Post</Text></Group>}
         centered size="md"
         styles={{
-          header: { background: '#0f0f1a', borderBottom: '1px solid #1e1e3a' },
-          body: { background: '#0f0f1a', padding: 0 },
-          content: { background: '#0f0f1a' },
+          header: { background: 'var(--nex-surface-alt)', borderBottom: '1px solid var(--nex-border)' },
+          body: { background: 'var(--nex-surface-alt)', padding: 0 },
+          content: { background: 'var(--nex-surface-alt)' },
         }}
       >
         {/* Post preview card */}
         <Box style={{ padding: '16px 20px 0' }}>
-          <Paper p="md" style={{ background: '#141428', border: '1px solid #2d2d4e', borderRadius: 12 }}>
+          <Paper p="md" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-subtle)', borderRadius: 12 }}>
             <Group mb="sm">
               <Avatar src={post.author?.avatar_url} radius="xl" size={40}>
                 {post.author?.full_name ? getInitials(post.author.full_name) : '?'}
@@ -353,10 +353,10 @@ export default function PostCard({ post }: Props) {
 
       {/* Edit modal */}
       <Modal opened={editOpen} onClose={() => setEditOpen(false)} title="Edit Post" centered
-        styles={{ header: { background: '#0f0f1a', borderBottom: '1px solid #1e1e3a' }, body: { background: '#0f0f1a' }, content: { background: '#0f0f1a' } }}>
+        styles={{ header: { background: 'var(--nex-surface-alt)', borderBottom: '1px solid var(--nex-border)' }, body: { background: 'var(--nex-surface-alt)' }, content: { background: 'var(--nex-surface-alt)' } }}>
         <Stack>
           <Textarea value={editContent} onChange={e => setEditContent(e.target.value)} minRows={4} autosize
-            styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: '#e2e8f0' } }} />
+            styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: '#e2e8f0' } }} />
           <Group justify="flex-end" gap={8}>
             <Button variant="subtle" c="dimmed" leftSection={<IconX size={14} />} onClick={() => setEditOpen(false)}>Cancel</Button>
             <Button leftSection={<IconCheck size={14} />} loading={editPost.isPending} disabled={!editContent.trim()} onClick={handleSaveEdit}

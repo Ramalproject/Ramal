@@ -51,7 +51,7 @@ export default function RegisterPage() {
     <Box
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0a0a14 0%, #0f0f1a 50%, #0a0a14 100%)',
+        background: 'linear-gradient(135deg, var(--nex-bg) 0%, var(--nex-surface-alt) 50%, var(--nex-bg) 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -62,7 +62,7 @@ export default function RegisterPage() {
         style={{
           width: '100%',
           maxWidth: 420,
-          background: 'rgba(13, 13, 26, 0.8)',
+          background: 'color-mix(in srgb, var(--nex-surface) 80%, transparent)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(124, 58, 237, 0.2)',
           borderRadius: 20,
@@ -113,7 +113,7 @@ export default function RegisterPage() {
                 error={errors.fullName?.message}
                 styles={{
                   label: { color: '#8892b0', marginBottom: 4 },
-                  input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: '#e2e8f0' },
+                  input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: '#e2e8f0' },
                 }}
               />
               <TextInput
@@ -123,7 +123,7 @@ export default function RegisterPage() {
                 error={errors.username?.message}
                 styles={{
                   label: { color: '#8892b0', marginBottom: 4 },
-                  input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: '#e2e8f0' },
+                  input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: '#e2e8f0' },
                 }}
               />
               <TextInput
@@ -134,7 +134,7 @@ export default function RegisterPage() {
                 error={errors.email?.message}
                 styles={{
                   label: { color: '#8892b0', marginBottom: 4 },
-                  input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: '#e2e8f0' },
+                  input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: '#e2e8f0' },
                 }}
               />
               <PasswordInput
@@ -144,7 +144,7 @@ export default function RegisterPage() {
                 error={errors.password?.message}
                 styles={{
                   label: { color: '#8892b0', marginBottom: 4 },
-                  input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: '#e2e8f0' },
+                  input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: '#e2e8f0' },
                   innerInput: { color: '#e2e8f0' },
                 }}
               />
@@ -155,7 +155,7 @@ export default function RegisterPage() {
                 error={errors.confirmPassword?.message}
                 styles={{
                   label: { color: '#8892b0', marginBottom: 4 },
-                  input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: '#e2e8f0' },
+                  input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: '#e2e8f0' },
                   innerInput: { color: '#e2e8f0' },
                 }}
               />

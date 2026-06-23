@@ -159,14 +159,14 @@ export default function CreatePostModal({ opened, onClose }: Props) {
       centered
       radius="xl"
       styles={{
-        content: { background: '#0f0f1a', border: '1px solid #1e1e3a', overflow: 'hidden' },
+        content: { background: 'var(--nex-surface-alt)', border: '1px solid var(--nex-border)', overflow: 'hidden' },
         overlay: { backdropFilter: 'blur(4px)' },
       }}
     >
       {/* Header */}
       <Box style={{
         background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(6,182,212,0.08))',
-        borderBottom: '1px solid #1e1e3a', padding: '16px 20px',
+        borderBottom: '1px solid var(--nex-border)', padding: '16px 20px',
       }}>
         <Group justify="space-between">
           <Group gap={10}>
@@ -186,7 +186,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                     <IconChevronDown size={10} color="#7c3aed" />
                   </UnstyledButton>
                 </Menu.Target>
-                <Menu.Dropdown style={{ background: '#141428', border: '1px solid #2d2d4e' }}>
+                <Menu.Dropdown style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-subtle)' }}>
                   <Menu.Item leftSection={<IconWorld size={14} color="#22c55e" />} onClick={() => setVisibility('public')}
                     style={{ color: visibility === 'public' ? '#a78bfa' : '#e2e8f0' }}>
                     Public {visibility === 'public' && '✓'}
@@ -217,10 +217,10 @@ export default function CreatePostModal({ opened, onClose }: Props) {
               display: 'grid',
               gridTemplateColumns: mediaUrls.length === 1 ? '1fr' : '1fr 1fr',
               gap: 6, marginBottom: 12, borderRadius: 10, overflow: 'hidden',
-              border: '1px solid #2d2d4e',
+              border: '1px solid var(--nex-subtle)',
             }}>
               {mediaUrls.map((url, i) => (
-                <Box key={i} style={{ position: 'relative', background: '#0d0d1a',
+                <Box key={i} style={{ position: 'relative', background: 'var(--nex-surface)',
                   minHeight: mediaUrls.length === 1 ? 220 : 140,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                   <img src={url} style={{ width: '100%', height: '100%', objectFit: 'contain', maxHeight: mediaUrls.length === 1 ? 260 : 160, display: 'block' }} />
@@ -278,7 +278,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
           </Group>
 
           {/* Action bar */}
-          <Box style={{ background: '#141428', borderRadius: 12, border: '1px solid #1e1e3a', padding: '10px 14px', marginBottom: 16 }}>
+          <Box style={{ background: 'var(--nex-surface)', borderRadius: 12, border: '1px solid var(--nex-border)', padding: '10px 14px', marginBottom: 16 }}>
             <Group justify="space-between" align="center">
               <Text size="xs" c="dimmed" fw={500}>Add to your post</Text>
               <Group gap={4}>
@@ -302,7 +302,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                       </ActionIcon>
                     </Tooltip>
                   </Popover.Target>
-                  <Popover.Dropdown style={{ background: '#141428', border: '1px solid #2d2d4e', padding: 12 }}>
+                  <Popover.Dropdown style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-subtle)', padding: 12 }}>
                     <Text size="xs" c="dimmed" mb={8} fw={600}>How are you feeling?</Text>
                     <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
                       {FEELINGS.map(f => (
@@ -330,7 +330,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                       </ActionIcon>
                     </Tooltip>
                   </Popover.Target>
-                  <Popover.Dropdown style={{ background: '#141428', border: '1px solid #2d2d4e', padding: 12, minWidth: 220 }}>
+                  <Popover.Dropdown style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-subtle)', padding: 12, minWidth: 220 }}>
                     <Text size="xs" c="dimmed" mb={8} fw={600}>Add location</Text>
                     <Group gap={6}>
                       <TextInput
@@ -340,7 +340,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                         onKeyDown={e => { if (e.key === 'Enter' && locationInput.trim()) { setLocationText(locationInput.trim()); setLocationInput(''); setLocationOpen(false) } }}
                         size="xs"
                         style={{ flex: 1 }}
-                        styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white' } }}
+                        styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' } }}
                         autoFocus
                       />
                       <ActionIcon size={28} style={{ background: '#7c3aed' }}
@@ -361,14 +361,14 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                       </ActionIcon>
                     </Tooltip>
                   </Popover.Target>
-                  <Popover.Dropdown style={{ background: '#141428', border: '1px solid #2d2d4e', padding: 12, minWidth: 240 }}>
+                  <Popover.Dropdown style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-subtle)', padding: 12, minWidth: 240 }}>
                     <Text size="xs" c="dimmed" mb={8} fw={600}>Tag someone</Text>
                     <TextInput
                       placeholder="Search name..."
                       value={tagQuery}
                       onChange={e => handleTagSearch(e.target.value)}
                       size="xs"
-                      styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white' } }}
+                      styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' } }}
                       autoFocus
                       mb={tagResults.length > 0 ? 6 : 0}
                     />
@@ -394,13 +394,13 @@ export default function CreatePostModal({ opened, onClose }: Props) {
             </Group>
           </Box>
 
-          <Divider color="#1e1e3a" mb={16} />
+          <Divider color="var(--nex-border)" mb={16} />
 
           {/* Boost toggle */}
           <Group justify="space-between" align="center" mb={boostEnabled ? 16 : 0}>
             <Group gap={10}>
               <Box style={{ width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
-                background: boostEnabled ? 'linear-gradient(135deg, #7c3aed, #5b21b6)' : '#1e1e3a' }}>
+                background: boostEnabled ? 'linear-gradient(135deg, #7c3aed, #5b21b6)' : 'var(--nex-border)' }}>
                 <IconRocket size={18} color={boostEnabled ? 'white' : '#4a4a6a'} />
               </Box>
               <Box>
@@ -420,7 +420,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                     const Icon = goal.icon; const active = boostGoal === goal.id
                     return (
                       <Box key={goal.id} onClick={() => setBoostGoal(goal.id)} style={{ flex: 1, cursor: 'pointer' }}>
-                        <Paper style={{ background: active ? `${goal.color}22` : '#141428', border: `1.5px solid ${active ? goal.color : '#1e1e3a'}`,
+                        <Paper style={{ background: active ? `${goal.color}22` : 'var(--nex-surface)', border: `1.5px solid ${active ? goal.color : 'var(--nex-border)'}`,
                           borderRadius: 12, padding: '12px 10px', textAlign: 'center', transition: 'all 0.2s' }}>
                           <Icon size={22} color={active ? goal.color : '#4a4a6a'} style={{ marginBottom: 6 }} />
                           <Text size="xs" fw={600} c={active ? 'white' : 'dimmed'}>{goal.label}</Text>
@@ -438,9 +438,9 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                     const Icon = aud.icon; const active = boostAudience === aud.id
                     return (
                       <Box key={aud.id} onClick={() => setBoostAudience(aud.id)} style={{ flex: 1, cursor: 'pointer' }}>
-                        <Paper style={{ background: active ? 'rgba(124,58,237,0.12)' : '#141428', border: `1.5px solid ${active ? aud.color : '#1e1e3a'}`,
+                        <Paper style={{ background: active ? 'rgba(124,58,237,0.12)' : 'var(--nex-surface)', border: `1.5px solid ${active ? aud.color : 'var(--nex-border)'}`,
                           borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.2s' }}>
-                          <Box style={{ width: 32, height: 32, borderRadius: 8, background: active ? `${aud.color}22` : '#1e1e3a',
+                          <Box style={{ width: 32, height: 32, borderRadius: 8, background: active ? `${aud.color}22` : 'var(--nex-border)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <Icon size={16} color={active ? aud.color : '#4a4a6a'} />
                           </Box>
@@ -457,7 +457,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
               <Box>
                 <Text size="xs" fw={600} c="dimmed" mb={8} style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>Duration</Text>
                 <SegmentedControl data={DURATIONS} value={duration} onChange={setDuration} fullWidth radius="md"
-                  styles={{ root: { background: '#141428', border: '1px solid #1e1e3a' },
+                  styles={{ root: { background: 'var(--nex-surface)', border: '1px solid var(--nex-border)' },
                     indicator: { background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', borderRadius: 8 },
                     label: { color: '#8892b0', fontSize: '0.8rem', fontWeight: 500 },
                     control: { borderColor: 'transparent !important' } }} />
@@ -471,7 +471,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                 </Group>
                 <Slider min={1} max={50} step={1} value={budget} onChange={setBudget} color="violet"
                   marks={[{ value: 1, label: '$1' }, { value: 10, label: '$10' }, { value: 25, label: '$25' }, { value: 50, label: '$50' }]}
-                  styles={{ track: { background: '#1e1e3a' }, mark: { borderColor: '#2d2d4e' }, markLabel: { color: '#4a4a6a', fontSize: '10px' } }}
+                  styles={{ track: { background: 'var(--nex-border)' }, mark: { borderColor: 'var(--nex-subtle)' }, markLabel: { color: '#4a4a6a', fontSize: '10px' } }}
                   mb={24} />
               </Box>
               <Box style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(6,182,212,0.08))',
@@ -481,12 +481,12 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                     <Group gap={4} justify="center" mb={2}><IconEye size={14} color="#7c3aed" /><Text size="xs" c="dimmed" fw={500}>Est. Reach</Text></Group>
                     <Text size="sm" fw={700} c="white">{reach}</Text>
                   </Box>
-                  <Divider orientation="vertical" color="#1e1e3a" />
+                  <Divider orientation="vertical" color="var(--nex-border)" />
                   <Box ta="center">
                     <Group gap={4} justify="center" mb={2}><IconClock size={14} color="#06b6d4" /><Text size="xs" c="dimmed" fw={500}>Duration</Text></Group>
                     <Text size="sm" fw={700} c="white">{duration} {Number(duration) === 1 ? 'Day' : 'Days'}</Text>
                   </Box>
-                  <Divider orientation="vertical" color="#1e1e3a" />
+                  <Divider orientation="vertical" color="var(--nex-border)" />
                   <Box ta="center">
                     <Group gap={4} justify="center" mb={2}><IconCurrencyDollar size={14} color="#10b981" /><Text size="xs" c="dimmed" fw={500}>Total Spend</Text></Group>
                     <Text size="sm" fw={700} c="white">${totalSpend.toFixed(0)}</Text>
@@ -499,7 +499,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
       </ScrollArea>
 
       {/* Footer */}
-      <Box style={{ borderTop: '1px solid #1e1e3a', padding: '14px 20px', background: '#0a0a14' }}>
+      <Box style={{ borderTop: '1px solid var(--nex-border)', padding: '14px 20px', background: 'var(--nex-bg)' }}>
         <Button fullWidth onClick={handleSubmit} loading={loading} disabled={!canPost} size="md" radius="xl"
           leftSection={boostEnabled ? <IconRocket size={16} /> : undefined}
           style={{ background: boostEnabled ? 'linear-gradient(135deg, #7c3aed, #06b6d4)' : 'linear-gradient(135deg, #7c3aed, #5b21b6)',

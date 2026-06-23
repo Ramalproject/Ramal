@@ -46,7 +46,7 @@ function dateDividerLabel(dateStr: string): string {
 // ─── Emoji Picker ────────────────────────────────────────────────────────────
 function EmojiPicker({ onSelect }: { onSelect: (e: string) => void }) {
   return (
-    <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, padding: 8, background: '#1e1e3a', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
+    <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, padding: 8, background: 'var(--nex-border)', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
       {EMOJI_LIST.map(e => (
         <button key={e} onClick={() => onSelect(e)} style={{ fontSize: 20, border: 'none', background: 'transparent', cursor: 'pointer', padding: 4, borderRadius: 4 }}>
           {e}
@@ -62,7 +62,7 @@ function ReactionBar({ reactions }: { reactions: { emoji: string; count: number 
   return (
     <Group gap={4} mt={4}>
       {reactions.map(({ emoji, count }) => (
-        <Box key={emoji} style={{ background: '#2d2d4e', borderRadius: 12, padding: '1px 6px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 3 }}>
+        <Box key={emoji} style={{ background: 'var(--nex-subtle)', borderRadius: 12, padding: '1px 6px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 3 }}>
           <span>{emoji}</span>
           <Text size="xs" c="dimmed">{count}</Text>
         </Box>
@@ -113,7 +113,7 @@ function MessageBubble({ msg, isMine, roomId, onReply }: BubbleProps) {
         {/* Reply preview */}
         {msg.reply_to && !isDeleted && (
           <Box style={{
-            background: '#0d0d1a', borderLeft: '3px solid #7c3aed', borderRadius: '8px 8px 0 0',
+            background: 'var(--nex-surface)', borderLeft: '3px solid #7c3aed', borderRadius: '8px 8px 0 0',
             padding: '4px 8px', marginBottom: 0, opacity: 0.8
           }}>
             <Text size="xs" c="violet" fw={600}>{msg.reply_to.sender?.full_name ?? 'Message'}</Text>
@@ -125,10 +125,10 @@ function MessageBubble({ msg, isMine, roomId, onReply }: BubbleProps) {
           p="xs"
           style={{
             background: isDeleted
-              ? '#1a1a2e'
+              ? 'var(--nex-input)'
               : isMine
                 ? 'linear-gradient(135deg, #7c3aed, #5b21b6)'
-                : '#1e1e3a',
+                : 'var(--nex-border)',
             borderRadius: msg.reply_to
               ? '0 8px 8px 8px'
               : isMine
@@ -247,7 +247,7 @@ function RoomItem({ room, isActive, myId, onClick }: { room: Room; isActive: boo
           <Box style={{
             position: 'absolute', bottom: 1, right: 1,
             width: 10, height: 10, borderRadius: '50%',
-            background: '#22c55e', border: '2px solid #0d0d1a'
+            background: '#22c55e', border: '2px solid var(--nex-surface)'
           }} />
         </Box>
         <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
@@ -460,10 +460,10 @@ export default function MessagesPage() {
   })
 
   return (
-    <Box style={{ display: 'flex', height: '100vh', background: '#0a0a14', overflow: 'hidden' }}>
+    <Box style={{ display: 'flex', height: '100vh', background: 'var(--nex-bg)', overflow: 'hidden' }}>
       {/* ── Left: Rooms List ─────────────────────────────────────── */}
-      <Box style={{ width: 320, flexShrink: 0, background: '#0d0d1a', borderRight: '1px solid #1e1e3a', display: 'flex', flexDirection: 'column' }}>
-        <Box p="md" style={{ borderBottom: '1px solid #1e1e3a' }}>
+      <Box style={{ width: 320, flexShrink: 0, background: 'var(--nex-surface)', borderRight: '1px solid var(--nex-border)', display: 'flex', flexDirection: 'column' }}>
+        <Box p="md" style={{ borderBottom: '1px solid var(--nex-border)' }}>
           <Group justify="space-between" mb="xs">
             <Text fw={700} c="white" size="lg">Messages</Text>
             <Tooltip label="New Chat">
@@ -476,7 +476,7 @@ export default function MessagesPage() {
             value={roomSearch}
             onChange={e => setRoomSearch(e.target.value)}
             size="sm"
-            styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white' } }}
+            styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' } }}
           />
         </Box>
         <ScrollArea style={{ flex: 1 }}>
@@ -485,7 +485,7 @@ export default function MessagesPage() {
           ) : filteredRooms.length === 0 ? (
             <Center py="xl">
               <Stack align="center" gap="xs">
-                <IconMessage size={40} color="#2d2d4e" />
+                <IconMessage size={40} color="var(--nex-subtle)" />
                 <Text c="dimmed" size="sm" ta="center">No conversations yet</Text>
               </Stack>
             </Center>
@@ -515,7 +515,7 @@ export default function MessagesPage() {
       ) : (
         <Box style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {/* Chat Header */}
-          <Box p="md" style={{ background: '#0d0d1a', borderBottom: '1px solid #1e1e3a', flexShrink: 0 }}>
+          <Box p="md" style={{ background: 'var(--nex-surface)', borderBottom: '1px solid var(--nex-border)', flexShrink: 0 }}>
             <Group justify="space-between">
               <Group>
                 <ActionIcon variant="subtle" c="dimmed" hiddenFrom="sm" onClick={() => setActiveRoomId(null)}>
@@ -528,7 +528,7 @@ export default function MessagesPage() {
                   <Box style={{
                     position: 'absolute', bottom: 1, right: 1,
                     width: 10, height: 10, borderRadius: '50%',
-                    background: '#22c55e', border: '2px solid #0d0d1a'
+                    background: '#22c55e', border: '2px solid var(--nex-surface)'
                   }} />
                 </Box>
                 <Stack gap={0}>
@@ -564,7 +564,7 @@ export default function MessagesPage() {
                   onChange={e => setSearchQuery(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleSearch() }}
                   size="xs"
-                  styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white' } }}
+                  styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' } }}
                 />
                 <ActionIcon size="sm" onClick={handleSearch}><IconSearch size={14} /></ActionIcon>
               </Group>
@@ -574,7 +574,7 @@ export default function MessagesPage() {
             {searchResults.length > 0 && (
               <Box mt="xs" style={{ maxHeight: 120, overflowY: 'auto' }}>
                 {searchResults.map(r => (
-                  <Text key={r.id} size="xs" c="dimmed" py={2} style={{ borderBottom: '1px solid #1e1e3a' }}>
+                  <Text key={r.id} size="xs" c="dimmed" py={2} style={{ borderBottom: '1px solid var(--nex-border)' }}>
                     {r.sender?.full_name}: {truncate(r.content, 60)}
                   </Text>
                 ))}
@@ -603,7 +603,7 @@ export default function MessagesPage() {
                     return (
                       <Group key={item.key} justify="center" my="xs">
                         <Text size="xs" c="dimmed" px="sm" py={2}
-                          style={{ background: '#1a1a2e', borderRadius: 12 }}>{item.label}</Text>
+                          style={{ background: 'var(--nex-input)', borderRadius: 12 }}>{item.label}</Text>
                       </Group>
                     )
                   }
@@ -624,11 +624,11 @@ export default function MessagesPage() {
           </ScrollArea>
 
           {/* Input Area */}
-          <Box style={{ background: '#0d0d1a', borderTop: '1px solid #1e1e3a', flexShrink: 0 }}>
+          <Box style={{ background: 'var(--nex-surface)', borderTop: '1px solid var(--nex-border)', flexShrink: 0 }}>
             {/* Attachment preview */}
             {attachment && (
               <Group px="md" pt="sm" gap={8}>
-                <Box style={{ background: '#1a1a2e', borderRadius: 8, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Box style={{ background: 'var(--nex-input)', borderRadius: 8, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <IconPaperclip size={14} color="#06b6d4" />
                   <Text size="xs" c="cyan">{truncate(attachment.name, 30)}</Text>
                   <ActionIcon size="xs" variant="subtle" c="dimmed" onClick={() => setAttachment(null)}>
@@ -641,7 +641,7 @@ export default function MessagesPage() {
             {/* Reply preview */}
             {replyTo && (
               <Group px="md" pt="sm" gap={8} align="flex-start">
-                <Box style={{ flex: 1, background: '#1a1a2e', borderLeft: '3px solid #7c3aed', borderRadius: '0 8px 8px 0', padding: '4px 8px' }}>
+                <Box style={{ flex: 1, background: 'var(--nex-input)', borderLeft: '3px solid #7c3aed', borderRadius: '0 8px 8px 0', padding: '4px 8px' }}>
                   <Text size="xs" c="violet" fw={600}>↩ Replying to {replyTo.sender?.full_name ?? 'message'}</Text>
                   <Text size="xs" c="dimmed" lineClamp={1}>{replyTo.content}</Text>
                 </Box>
@@ -712,7 +712,7 @@ export default function MessagesPage() {
                   value={msgInput}
                   onChange={e => setMsgInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-                  styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white', borderRadius: 20 } }}
+                  styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white', borderRadius: 20 } }}
                 />
 
                 <ActionIcon
@@ -720,7 +720,7 @@ export default function MessagesPage() {
                   onClick={handleSend}
                   disabled={!msgInput.trim() && !attachment}
                   style={{
-                    background: msgInput.trim() || attachment ? 'linear-gradient(135deg, #7c3aed, #5b21b6)' : '#1e1e3a',
+                    background: msgInput.trim() || attachment ? 'linear-gradient(135deg, #7c3aed, #5b21b6)' : 'var(--nex-border)',
                     borderRadius: '50%',
                     transition: 'background 0.2s',
                   }}
@@ -740,9 +740,9 @@ export default function MessagesPage() {
         title={<Text fw={700} c="white">New Message</Text>}
         centered size="sm"
         styles={{
-          header: { background: '#0f0f1a', borderBottom: '1px solid #1e1e3a' },
-          body: { background: '#0f0f1a', padding: 0 },
-          content: { background: '#0f0f1a' },
+          header: { background: 'var(--nex-surface-alt)', borderBottom: '1px solid var(--nex-border)' },
+          body: { background: 'var(--nex-surface-alt)', padding: 0 },
+          content: { background: 'var(--nex-surface-alt)' },
         }}
       >
         <Box p="md">
@@ -752,7 +752,7 @@ export default function MessagesPage() {
             value={newChatRaw}
             onChange={e => setNewChatRaw(e.target.value)}
             autoFocus
-            styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white' } }}
+            styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' } }}
             mb="sm"
           />
           {newChatQuery.length < 1 ? (

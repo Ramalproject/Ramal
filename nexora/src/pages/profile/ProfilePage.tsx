@@ -123,9 +123,9 @@ export default function ProfilePage() {
         title={<Text fw={700} c="white" size="lg">⚙️ Messaging Setup Required</Text>}
         size="xl" centered
         styles={{
-          header: { background: '#0f0f1a', borderBottom: '1px solid #1e1e3a' },
-          body: { background: '#0f0f1a' },
-          content: { background: '#0f0f1a' },
+          header: { background: 'var(--nex-surface-alt)', borderBottom: '1px solid var(--nex-border)' },
+          body: { background: 'var(--nex-surface-alt)' },
+          content: { background: 'var(--nex-surface-alt)' },
         }}
       >
         <Stack gap="md">
@@ -154,7 +154,7 @@ export default function ProfilePage() {
               )}
             </CopyButton>
             <ScrollArea h={300}>
-              <Code block style={{ background: '#0a0a14', color: '#a78bfa', fontSize: 11, display: 'block', padding: 12, whiteSpace: 'pre' }}>
+              <Code block style={{ background: 'var(--nex-bg)', color: '#a78bfa', fontSize: 11, display: 'block', padding: 12, whiteSpace: 'pre' }}>
                 {MESSAGING_SQL}
               </Code>
             </ScrollArea>
@@ -176,7 +176,7 @@ export default function ProfilePage() {
           src={profile.avatar_url}
           radius="xl"
           size={96}
-          style={{ position: 'absolute', bottom: -48, left: 24, border: '4px solid #0a0a14' }}
+          style={{ position: 'absolute', bottom: -48, left: 24, border: '4px solid var(--nex-bg)' }}
         >
           {getInitials(profile.full_name)}
         </Avatar>
@@ -295,7 +295,7 @@ export default function ProfilePage() {
           </Tabs.Panel>
 
           <Tabs.Panel value="about" pt="md">
-            <Paper p="md" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
+            <Paper p="md" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
               <Stack gap="sm">
                 {profile.skills?.length > 0 && (
                   <Group gap={6}>

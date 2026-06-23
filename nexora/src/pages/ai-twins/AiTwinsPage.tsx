@@ -46,8 +46,8 @@ function TwinCard({ twin }: { twin: AiTwin }) {
       p="lg"
       onClick={() => navigate(`/ai-twins/${twin.id}`)}
       style={{
-        background: '#0d0d1a',
-        border: '1px solid #1e1e3a',
+        background: 'var(--nex-surface)',
+        border: '1px solid var(--nex-border)',
         borderRadius: 16,
         cursor: 'pointer',
         transition: 'border-color 0.2s, transform 0.1s',
@@ -55,7 +55,7 @@ function TwinCard({ twin }: { twin: AiTwin }) {
         overflow: 'hidden',
       }}
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#7c3aed' }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#1e1e3a' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--nex-border)' }}
     >
       <Box style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #7c3aed, #06b6d4)' }} />
 
@@ -122,7 +122,7 @@ export default function AiTwinsPage() {
         <Tabs.Panel value="discover">
           {publicTwins.length === 0 ? (
             <Box ta="center" py="xl">
-              <IconRobot size={64} color="#2d2d4e" />
+              <IconRobot size={64} color="var(--nex-subtle)" />
               <Text c="dimmed" mt="md">No AI Twins yet. Create the first one!</Text>
             </Box>
           ) : (
@@ -139,7 +139,7 @@ export default function AiTwinsPage() {
         <Tabs.Panel value="my-twins">
           {myTwins.length === 0 ? (
             <Box ta="center" py="xl">
-              <IconRobot size={64} color="#2d2d4e" />
+              <IconRobot size={64} color="var(--nex-subtle)" />
               <Text c="dimmed" mt="md">You haven&apos;t created any AI Twins yet.</Text>
               <Button mt="md" leftSection={<IconPlus size={14} />} style={{ background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' }}>
                 Create My First Twin

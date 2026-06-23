@@ -39,7 +39,7 @@ export default function TrendingPage() {
               : posts.length === 0
                 ? <Text c="dimmed" ta="center" py="xl">No trending posts yet.</Text>
                 : posts.map((post, i) => (
-                  <Paper key={post.id} p="md" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
+                  <Paper key={post.id} p="md" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
                     <Group>
                       <Text fw={700} c="dimmed" size="lg" w={30}>{i + 1}</Text>
                       <Avatar src={post.author?.avatar_url} radius="xl" size="sm">
@@ -65,7 +65,7 @@ export default function TrendingPage() {
         </Grid.Col>
 
         <Grid.Col span={{ base: 12, md: 5 }}>
-          <Paper p="md" mb="md" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
+          <Paper p="md" mb="md" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
             <Text fw={600} c="white" mb="sm"># Trending Hashtags</Text>
             {hashtags.length === 0
               ? <Text c="dimmed" size="sm">No hashtags found in posts yet.</Text>
@@ -80,7 +80,7 @@ export default function TrendingPage() {
             }
           </Paper>
 
-          <Paper p="md" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
+          <Paper p="md" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
             <Text fw={600} c="white" mb="sm">⭐ Top Creators</Text>
             {creatorsLoading
               ? [1, 2, 3].map(i => <Skeleton key={i} height={50} radius="md" mb={4} />)

@@ -27,7 +27,7 @@ export default function ExplorePage() {
         value={search}
         onChange={e => setSearch(e.target.value)}
         mb="xl"
-        styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white', fontSize: 16 } }}
+        styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white', fontSize: 16 } }}
       />
 
       {!isSearching ? (
@@ -37,7 +37,7 @@ export default function ExplorePage() {
             {topCreators.map(creator => (
               <Paper
                 key={creator.id} p="md"
-                style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12, cursor: 'pointer' }}
+                style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12, cursor: 'pointer' }}
                 onClick={() => navigate(`/profile/${creator.username}`)}
               >
                 <Group>
@@ -67,7 +67,7 @@ export default function ExplorePage() {
                   {profileResults.map(p => (
                     <Paper
                       key={p.id} p="md"
-                      style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12, cursor: 'pointer' }}
+                      style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12, cursor: 'pointer' }}
                       onClick={() => navigate(`/profile/${p.username}`)}
                     >
                       <Group>
@@ -89,7 +89,7 @@ export default function ExplorePage() {
                 ? <Text c="dimmed" ta="center" py="xl">No posts found.</Text>
                 : <Stack gap="sm">
                   {postResults.map(p => (
-                    <Paper key={p.id} p="md" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
+                    <Paper key={p.id} p="md" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
                       <Group mb={4}>
                         <Avatar src={p.author?.avatar_url} radius="xl" size="sm">
                           {p.author?.full_name ? getInitials(p.author.full_name) : '?'}

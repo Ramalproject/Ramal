@@ -32,7 +32,7 @@ export default function StoryBar() {
                 position: 'absolute', bottom: -2, right: -2,
                 width: 20, height: 20, borderRadius: '50%',
                 background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: '2px solid #0a0a14'
+                border: '2px solid var(--nex-bg)'
               }}>
                 <IconPlus size={10} color="white" />
               </Box>
@@ -50,7 +50,7 @@ export default function StoryBar() {
                 src={story.avatar_url}
                 radius="xl"
                 size={56}
-                style={{ border: `3px solid ${story.seen ? '#2d2d4e' : '#7c3aed'}`, padding: 2 }}
+                style={{ border: `3px solid ${story.seen ? 'var(--nex-subtle)' : '#7c3aed'}`, padding: 2 }}
               >
                 {getInitials(story.full_name)}
               </Avatar>

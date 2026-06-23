@@ -1,8 +1,10 @@
-import { Stack, Text, Avatar, Group, Badge, Button, UnstyledButton, Divider, Box } from '@mantine/core'
+import { Stack, Text, Avatar, Group, Badge, Button, UnstyledButton, Divider, Box, Tooltip, ActionIcon } from '@mantine/core'
+import { useComputedColorScheme, useMantineColorScheme } from '@mantine/core'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   IconHome2, IconCompass, IconTrendingUp, IconMessage2, IconBell,
-  IconRobot, IconUsers, IconChartBar, IconSettings, IconPlus, IconLogout
+  IconRobot, IconUsers, IconChartBar, IconSettings, IconPlus, IconLogout,
+  IconSun, IconMoon,
 } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -31,6 +33,9 @@ export default function Sidebar({ onMobileClose }: Props) {
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuthStore()
   const { unreadCount } = useNotificationStore()
+  const { setColorScheme } = useMantineColorScheme()
+  const computedColorScheme = useComputedColorScheme('dark', { getInitialValueInEffect: true })
+  const isDark = computedColorScheme === 'dark'
 
   const handleSignOut = async () => {
     await signOut()
@@ -146,9 +151,22 @@ export default function Sidebar({ onMobileClose }: Props) {
         </Stack>
       </Stack>
 
-      {/* Sign Out */}
+      {/* Sign Out + Theme Toggle */}
       <Box>
-        <Divider color="#1e1e3a" mb="md" />
+        <Divider color="var(--nex-border)" mb="md" />
+        <Group justify="space-between" mb="xs">
+          <Tooltip label={isDark ? 'Switch to Light mode' : 'Switch to Dark mode'} position="right" withArrow>
+            <ActionIcon
+              variant="subtle"
+              size="lg"
+              onClick={() => setColorScheme(isDark ? 'light' : 'dark')}
+              aria-label="Toggle color scheme"
+              style={{ color: '#8892b0' }}
+            >
+              {isDark ? <IconSun size={18} /> : <IconMoon size={18} />}
+            </ActionIcon>
+          </Tooltip>
+        </Group>
         <UnstyledButton
           onClick={handleSignOut}
           style={{

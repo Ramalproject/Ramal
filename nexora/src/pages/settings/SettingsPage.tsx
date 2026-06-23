@@ -8,7 +8,7 @@ import { useQueryClient } from '@tanstack/react-query'
 
 const OPENAI_KEY_STORAGE = 'nexora_openai_api_key'
 
-const inputStyle = { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white' as const }
+const inputStyle = { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' as const }
 const labelStyle = { color: '#8892b0' as const }
 
 export default function SettingsPage() {
@@ -73,7 +73,7 @@ export default function SettingsPage() {
         </Tabs.List>
 
         <Tabs.Panel value="profile">
-          <Paper p="xl" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
+          <Paper p="xl" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
             <Stack>
               <TextInput label="Full Name" value={fullName} onChange={e => setFullName(e.target.value)}
                 styles={{ label: labelStyle, input: inputStyle }} />
@@ -94,7 +94,7 @@ export default function SettingsPage() {
         </Tabs.Panel>
 
         <Tabs.Panel value="account">
-          <Paper p="xl" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
+          <Paper p="xl" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
             <Stack>
               <TextInput label="Email" value={user?.email ?? ''} disabled
                 styles={{ label: labelStyle, input: { ...inputStyle, color: '#555' } }} />
@@ -105,7 +105,7 @@ export default function SettingsPage() {
                 styles={{ label: labelStyle, input: inputStyle }} />
               <Button variant="outline" color="violet">Update Password</Button>
               {/* Privacy */}
-              <Paper p="md" style={{ background: '#0a0a1e', border: '1px solid #2d2d4e', borderRadius: 8 }}>
+              <Paper p="md" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-subtle)', borderRadius: 8 }}>
                 <Text c="white" fw={600} mb={4}>Account Privacy</Text>
                 <Text c="dimmed" size="xs" mb="md">Control who can see your posts and profile</Text>
                 <Group justify="space-between" align="center" mb="sm">
@@ -135,7 +135,7 @@ export default function SettingsPage() {
         </Tabs.Panel>
 
         <Tabs.Panel value="apikeys">
-          <Paper p="xl" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
+          <Paper p="xl" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
             <Stack>
               <Text c="white" fw={600}>OpenAI API Key</Text>
               <Text c="dimmed" size="sm">
@@ -165,7 +165,7 @@ export default function SettingsPage() {
         </Tabs.Panel>
 
         <Tabs.Panel value="notifications">
-          <Paper p="xl" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
+          <Paper p="xl" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
             <Stack gap="lg">
               {[
                 { label: 'New followers', desc: 'Get notified when someone follows you', defaultChecked: true },

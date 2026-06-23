@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
+import { notifications } from '@mantine/notifications'
 import { messageService } from '../services/message.service'
 import { useAuthStore } from '../store/useAuthStore'
 import type { Message } from '../types'
@@ -54,6 +55,9 @@ export function useSendMessage() {
         return exists ? old : [...old, msg]
       })
       qc.invalidateQueries({ queryKey: ['rooms'] })
+    },
+    onError: () => {
+      notifications.show({ title: 'Send failed', message: 'Could not send message — run the messaging SQL fix in Supabase', color: 'red' })
     }
   })
 }

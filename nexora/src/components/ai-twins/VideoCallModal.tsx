@@ -432,7 +432,7 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
         position: 'absolute', bottom: 116, right: 18,
         width: 130, height: 182, borderRadius: 14, overflow: 'hidden',
         border: isListening ? '2px solid rgba(167,139,250,0.9)' : '2px solid rgba(255,255,255,0.18)',
-        background: '#0d0d1a',
+        background: 'var(--nex-surface)',
         boxShadow: isListening ? '0 0 20px rgba(167,139,250,0.4), 0 8px 28px rgba(0,0,0,0.7)' : '0 8px 28px rgba(0,0,0,0.7)',
         transition: 'border 0.3s, box-shadow 0.3s', zIndex: 20,
       }}>

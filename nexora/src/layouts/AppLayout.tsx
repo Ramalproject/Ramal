@@ -11,10 +11,10 @@ export default function AppLayout() {
       navbar={{ width: 240, breakpoint: 'sm', collapsed: { mobile: !mobileOpened } }}
       padding={0}
     >
-      <AppShell.Navbar style={{ background: '#0d0d1a', borderRight: '1px solid #1e1e3a' }}>
+      <AppShell.Navbar style={{ background: 'var(--nex-surface)', borderRight: '1px solid var(--nex-border)' }}>
         <Sidebar onMobileClose={() => toggleMobile()} />
       </AppShell.Navbar>
-      <AppShell.Main style={{ background: '#0a0a14', minHeight: '100vh' }}>
+      <AppShell.Main style={{ background: 'var(--nex-bg)', minHeight: '100vh' }}>
         <Outlet />
       </AppShell.Main>
     </AppShell>

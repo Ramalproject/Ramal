@@ -41,8 +41,8 @@ export default function NotificationsPage() {
       {isLoading ? (
         <Text c="dimmed" ta="center">Loading notifications...</Text>
       ) : notifs.length === 0 ? (
-        <Paper p="xl" ta="center" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
-          <IconBell size={48} color="#2d2d4e" />
+        <Paper p="xl" ta="center" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
+          <IconBell size={48} color="var(--nex-subtle)" />
           <Text c="dimmed" mt="md">No notifications yet.</Text>
           <Text c="dimmed" size="sm">When people interact with you, you&apos;ll see it here.</Text>
         </Paper>
@@ -54,8 +54,8 @@ export default function NotificationsPage() {
               p="md"
               onClick={() => { if (!n.is_read) markRead.mutate(n.id) }}
               style={{
-                background: n.is_read ? '#0d0d1a' : '#130d2a',
-                border: `1px solid ${n.is_read ? '#1e1e3a' : '#3d1e6a'}`,
+                background: n.is_read ? 'var(--nex-surface)' : 'var(--nex-notif-unread)',
+                border: `1px solid ${n.is_read ? 'var(--nex-border)' : 'var(--nex-notif-border)'}`,
                 borderRadius: 12,
                 cursor: n.is_read ? 'default' : 'pointer',
                 transition: 'background 0.2s',

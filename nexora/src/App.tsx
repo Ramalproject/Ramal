@@ -1,4 +1,4 @@
-import { MantineProvider, Loader, Center } from '@mantine/core'
+import { MantineProvider, Loader, Center, ColorSchemeScript } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { ModalsProvider } from '@mantine/modals'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -53,6 +53,7 @@ function ProtectedRoute() {
 export default function App() {
   return (
     <MantineProvider theme={nexoraTheme} defaultColorScheme="dark">
+      <ColorSchemeScript defaultColorScheme="dark" />
       <Notifications position="top-right" />
       <ModalsProvider>
         <QueryClientProvider client={queryClient}>

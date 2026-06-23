@@ -39,7 +39,7 @@ interface StatCardProps {
 
 function StatCard({ icon, label, value, color }: StatCardProps) {
   return (
-    <Paper p="lg" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
+    <Paper p="lg" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
       <Group>
         <Box style={{
           width: 48, height: 48, borderRadius: 12,
@@ -98,7 +98,7 @@ export default function AnalyticsPage() {
       )}
 
       {!isLoading && stats && (
-        <Paper p="xl" mt="xl" style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12 }}>
+        <Paper p="xl" mt="xl" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
           <Text fw={600} c="white" mb="xl" ta="center">Engagement Breakdown</Text>
           <Group justify="center" gap="xl">
             <RingProgress

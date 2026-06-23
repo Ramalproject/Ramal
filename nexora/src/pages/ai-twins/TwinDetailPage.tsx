@@ -125,7 +125,7 @@ export default function TwinDetailPage() {
   return (
     <Box style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <Box p="md" style={{ background: '#0d0d1a', borderBottom: '1px solid #1e1e3a', flexShrink: 0 }}>
+      <Box p="md" style={{ background: 'var(--nex-surface)', borderBottom: '1px solid var(--nex-border)', flexShrink: 0 }}>
         <Group>
           <ActionIcon variant="subtle" c="dimmed" onClick={() => navigate('/ai-twins')}>
             <IconArrowLeft size={18} />
@@ -145,7 +145,7 @@ export default function TwinDetailPage() {
                   style={{
                     position: 'absolute', bottom: -2, right: -2,
                     background: '#7c3aed',
-                    border: '2px solid #0d0d1a',
+                    border: '2px solid var(--nex-surface)',
                   }}
                 >
                   <IconCamera size={11} color="white" />
@@ -213,7 +213,7 @@ export default function TwinDetailPage() {
                   maxWidth: '72%',
                   background: msg.role === 'user'
                     ? 'linear-gradient(135deg, #7c3aed, #5b21b6)'
-                    : '#1e1e3a',
+                    : 'var(--nex-border)',
                   borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                 }}
               >
@@ -228,7 +228,7 @@ export default function TwinDetailPage() {
               <Avatar src={twin.avatar_url} radius="xl" size="sm">
                 <IconRobot size={14} color="#7c3aed" />
               </Avatar>
-              <Paper p="sm" style={{ background: '#1e1e3a', borderRadius: '16px 16px 16px 4px' }}>
+              <Paper p="sm" style={{ background: 'var(--nex-border)', borderRadius: '16px 16px 16px 4px' }}>
                 <Loader size="xs" color="violet" />
               </Paper>
             </Group>
@@ -240,7 +240,7 @@ export default function TwinDetailPage() {
       {videoCallOpen && <VideoCallModal twin={twin} onEnd={() => setVideoCallOpen(false)} />}
 
       {/* Input */}
-      <Box p="md" style={{ background: '#0d0d1a', borderTop: '1px solid #1e1e3a', flexShrink: 0 }}>
+      <Box p="md" style={{ background: 'var(--nex-surface)', borderTop: '1px solid var(--nex-border)', flexShrink: 0 }}>
         <Group>
           <TextInput
             style={{ flex: 1 }}
@@ -249,7 +249,7 @@ export default function TwinDetailPage() {
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
             disabled={chatLoading}
-            styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white' } }}
+            styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' } }}
           />
           <ActionIcon
             size="lg"

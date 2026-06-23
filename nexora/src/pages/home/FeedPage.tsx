@@ -18,7 +18,7 @@ export default function FeedPage() {
 
       <Paper
         mb="md" p="md"
-        style={{ background: '#0d0d1a', border: '1px solid #1e1e3a', borderRadius: 12, cursor: 'pointer' }}
+        style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12, cursor: 'pointer' }}
         onClick={() => setCreateOpen(true)}
       >
         <Group>
