@@ -301,9 +301,10 @@ export default function MessagesPage() {
   const [attachment, setAttachment] = useState<{ url: string; name: string; type: string } | null>(null)
   const [uploading, setUploading] = useState(false)
   const [newChatOpen, setNewChatOpen] = useState(false)
-  const [newChatQuery, setNewChatQuery] = useState('')
+  const [newChatRaw, setNewChatRaw] = useState('')
   const [newChatLoading, setNewChatLoading] = useState(false)
 
+  const newChatQuery = newChatRaw.replace(/^@+/, '').trim()
   const { data: newChatResults = [] } = useSearchProfiles(newChatQuery)
   const { data: rooms = [], isLoading: roomsLoading } = useRooms()
   const { data: messages = [], isLoading: msgsLoading } = useMessages(activeRoomId ?? '')
@@ -418,7 +419,7 @@ export default function MessagesPage() {
       const roomId = await messageService.getOrCreateRoom(authUser.id, targetUserId)
       selectRoom(roomId)
       setNewChatOpen(false)
-      setNewChatQuery('')
+      setNewChatRaw('')
     } catch {
       notifications.show({ title: 'Error', message: 'Could not start conversation — messaging tables may not exist yet', color: 'red' })
     } finally {
@@ -726,7 +727,7 @@ export default function MessagesPage() {
       {/* ── New Chat Modal ── */}
       <Modal
         opened={newChatOpen}
-        onClose={() => { setNewChatOpen(false); setNewChatQuery('') }}
+        onClose={() => { setNewChatOpen(false); setNewChatRaw('') }}
         title={<Text fw={700} c="white">New Message</Text>}
         centered size="sm"
         styles={{
@@ -739,8 +740,8 @@ export default function MessagesPage() {
           <TextInput
             placeholder="Search people..."
             leftSection={<IconSearch size={14} />}
-            value={newChatQuery}
-            onChange={e => setNewChatQuery(e.target.value.replace(/^@+/, ''))}
+            value={newChatRaw}
+            onChange={e => setNewChatRaw(e.target.value)}
             autoFocus
             styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white' } }}
             mb="sm"

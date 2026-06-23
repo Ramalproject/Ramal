@@ -2,6 +2,14 @@ import { supabase } from '../lib/supabase'
 import type { Comment } from '../types'
 
 export const commentService = {
+  async getCountByPost(postId: string): Promise<number> {
+    const { count } = await supabase
+      .from('comments')
+      .select('*', { count: 'exact', head: true })
+      .eq('post_id', postId)
+    return count ?? 0
+  },
+
   async getByPost(postId: string): Promise<Comment[]> {
     const { data, error } = await supabase
       .from('comments')

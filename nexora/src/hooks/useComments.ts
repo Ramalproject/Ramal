@@ -2,6 +2,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { commentService } from '../services/comment.service'
 import { useAuthStore } from '../store/useAuthStore'
 
+export function useCommentCount(postId: string) {
+  return useQuery({
+    queryKey: ['comments', 'count', postId],
+    queryFn: () => commentService.getCountByPost(postId),
+    enabled: !!postId,
+    staleTime: 1000 * 60,
+  })
+}
+
 export function useComments(postId: string, enabled: boolean) {
   return useQuery({
     queryKey: ['comments', postId],

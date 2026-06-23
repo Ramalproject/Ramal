@@ -1,11 +1,11 @@
 import { Paper, Group, Avatar, Text, Badge, ActionIcon, Stack, SimpleGrid, Menu, Modal, Textarea, Button, Box, TextInput, Loader, Divider } from '@mantine/core'
 import { IconHeart, IconHeartFilled, IconMessageCircle, IconShare, IconBookmark, IconBookmarkFilled, IconDots, IconEdit, IconTrash, IconCheck, IconX, IconSend, IconCopy, IconBrandFacebook } from '@tabler/icons-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { notifications } from '@mantine/notifications'
 import type { Post } from '../../types'
 import { useLikePost, useUnlikePost, useDeletePost, useEditPost, useCreatePost } from '../../hooks/usePosts'
-import { useComments, useAddComment, useDeleteComment } from '../../hooks/useComments'
+import { useComments, useAddComment, useDeleteComment, useCommentCount } from '../../hooks/useComments'
 import { useAuthStore } from '../../store/useAuthStore'
 import { timeAgo, getInitials, getPlanColor, getPlanLabel, formatNumber } from '../../utils'
 
@@ -52,7 +52,7 @@ export default function PostCard({ post }: Props) {
   const authUser = useAuthStore(s => s.user)
   const [liked, setLiked] = useState(post.liked_by_me ?? false)
   const [likeCount, setLikeCount] = useState(post.likes_count)
-  const [commentCount, setCommentCount] = useState(post.comments_count)
+  const { data: liveCommentCount } = useCommentCount(post.id)
   const [bookmarked, setBookmarked] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editContent, setEditContent] = useState(post.content)
@@ -70,12 +70,7 @@ export default function PostCard({ post }: Props) {
   const deleteComment = useDeleteComment(post.id)
   const { data: comments = [], isLoading: commentsLoading } = useComments(post.id, showComments)
 
-  // Once comments load, persist the real count so it's correct even after hiding
-  useEffect(() => {
-    if (showComments && !commentsLoading) setCommentCount(comments.length)
-  }, [comments.length, commentsLoading, showComments])
-
-  const displayCommentCount = commentCount
+  const displayCommentCount = showComments && !commentsLoading ? comments.length : (liveCommentCount ?? post.comments_count)
 
   const isOwn = post.author_id === authUser?.id
 
@@ -135,7 +130,7 @@ export default function PostCard({ post }: Props) {
     const text = commentInput.trim()
     if (!text) return
     addComment.mutate(text, {
-      onSuccess: () => { setCommentInput(''); setCommentCount(c => c + 1) },
+      onSuccess: () => { setCommentInput('') },
       onError: () => notifications.show({ message: 'Could not add comment — database table may not exist yet', color: 'red' }),
     })
   }
@@ -255,7 +250,7 @@ export default function PostCard({ post }: Props) {
                         <Text size="xs" fw={600} c="white">{comment.author?.full_name ?? 'Unknown'}</Text>
                         <Text size="xs" c="dimmed">{timeAgo(comment.created_at)}</Text>
                         {comment.user_id === authUser?.id && (
-                          <ActionIcon size="xs" variant="subtle" c="dimmed" ml="auto" onClick={() => deleteComment.mutate(comment.id, { onSuccess: () => setCommentCount(c => Math.max(0, c - 1)) })}>
+                          <ActionIcon size="xs" variant="subtle" c="dimmed" ml="auto" onClick={() => deleteComment.mutate(comment.id)}>
                             <IconTrash size={11} />
                           </ActionIcon>
                         )}
