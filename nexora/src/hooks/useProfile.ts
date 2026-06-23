@@ -37,8 +37,9 @@ export function useFollowUser() {
     mutationFn: ({ followingId }: { followingId: string }) =>
       profileService.followUser(authUser!.id, followingId),
     onSuccess: (_, { followingId }) => {
-      qc.invalidateQueries({ queryKey: ['isFollowing', authUser?.id, followingId] })
-      qc.invalidateQueries({ queryKey: ['profile', followingId] })
+      // Directly set state — don't re-fetch (follows table may not exist in DB)
+      qc.setQueryData(['isFollowing', authUser?.id, followingId], true)
+      qc.invalidateQueries({ queryKey: ['profile'] })
     }
   })
 }
@@ -50,8 +51,8 @@ export function useUnfollowUser() {
     mutationFn: ({ followingId }: { followingId: string }) =>
       profileService.unfollowUser(authUser!.id, followingId),
     onSuccess: (_, { followingId }) => {
-      qc.invalidateQueries({ queryKey: ['isFollowing', authUser?.id, followingId] })
-      qc.invalidateQueries({ queryKey: ['profile', followingId] })
+      qc.setQueryData(['isFollowing', authUser?.id, followingId], false)
+      qc.invalidateQueries({ queryKey: ['profile'] })
     }
   })
 }

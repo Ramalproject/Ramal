@@ -47,6 +47,17 @@ export interface Post {
   saved_by_me?: boolean
 }
 
+// ─── Comment ─────────────────────────────────────────────────────────────────
+
+export interface Comment {
+  id: string
+  post_id: string
+  user_id: string
+  content: string
+  created_at: string
+  author?: Profile
+}
+
 // ─── AI Twin ─────────────────────────────────────────────────────────────────
 
 export interface AiTwin {
