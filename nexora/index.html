@@ -13,6 +13,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <!-- S3 SPA fix: if served at a non-root path, redirect to /#/<hash> -->
+    <script>
+      (function() {
+        var path = window.location.pathname;
+        if (path !== '/' && path !== '/index.html') {
+          var hash = window.location.hash ? window.location.hash.replace(/^#\/?/, '') : '';
+          window.location.replace('/' + (hash ? '#/' + hash : ''));
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

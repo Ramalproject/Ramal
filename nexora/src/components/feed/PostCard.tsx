@@ -1,7 +1,8 @@
 import { Paper, Group, Avatar, Text, Badge, ActionIcon, Stack, SimpleGrid, Menu, Modal, Textarea, Button, Box, TextInput, Loader, Divider } from '@mantine/core'
 import { IconHeart, IconHeartFilled, IconMessageCircle, IconShare, IconBookmark, IconBookmarkFilled, IconDots, IconEdit, IconTrash, IconCheck, IconX, IconSend, IconCopy, IconBrandFacebook } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import EmojiPickerPopover from './EmojiPickerPopover'
 import { notifications } from '@mantine/notifications'
 import type { Post } from '../../types'
 import { useLikePost, useUnlikePost, useDeletePost, useEditPost, useCreatePost } from '../../hooks/usePosts'
@@ -60,6 +61,7 @@ export default function PostCard({ post }: Props) {
   const [editContent, setEditContent] = useState(post.content)
   const [showComments, setShowComments] = useState(false)
   const [commentInput, setCommentInput] = useState('')
+  const commentInputRef = useRef<HTMLInputElement>(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [sharePosting, setSharePosting] = useState(false)
 
@@ -136,6 +138,16 @@ export default function PostCard({ post }: Props) {
       onSuccess: () => { notifications.show({ message: 'Post updated', color: 'green' }); setEditOpen(false) },
       onError: () => notifications.show({ message: 'Failed to update post', color: 'red' }),
     })
+  }
+
+  function insertEmoji(emoji: string) {
+    const input = commentInputRef.current
+    if (!input) { setCommentInput(c => c + emoji); return }
+    const start = input.selectionStart ?? commentInput.length
+    const end = input.selectionEnd ?? commentInput.length
+    const next = commentInput.slice(0, start) + emoji + commentInput.slice(end)
+    setCommentInput(next)
+    setTimeout(() => { input.setSelectionRange(start + emoji.length, start + emoji.length); input.focus() }, 0)
   }
 
   function handleAddComment() {
@@ -240,13 +252,16 @@ export default function PostCard({ post }: Props) {
                   {authUser?.email?.[0]?.toUpperCase()}
                 </Avatar>
                 <TextInput
+                  ref={commentInputRef}
                   style={{ flex: 1 }}
-                  placeholder="Write a comment..."
+                  placeholder="Write a comment... 😊"
                   value={commentInput}
                   onChange={e => setCommentInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddComment() } }}
                   size="sm"
-                  styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white', borderRadius: 20 } }}
+                  rightSection={<EmojiPickerPopover onSelect={insertEmoji} />}
+                  rightSectionWidth={32}
+                  styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', borderRadius: 20, paddingRight: 36 } }}
                 />
                 <ActionIcon size={32} radius="xl" disabled={!commentInput.trim()} loading={addComment.isPending} onClick={handleAddComment}
                   style={{ background: commentInput.trim() ? 'linear-gradient(135deg, #7c3aed, #5b21b6)' : 'var(--nex-input)', flexShrink: 0 }}>
