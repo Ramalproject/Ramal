@@ -231,7 +231,7 @@ export default function ProfilePage() {
                     try {
                       const roomId = await messageService.getOrCreateRoom(authUser.id, profile.id)
                       await queryClient.invalidateQueries({ queryKey: ['rooms'] })
-                      navigate(`/messages/${roomId}`)
+                      navigate(`/messages/${roomId}?with=${profile.id}`)
                     } catch {
                       setSetupOpen(true)
                     }

@@ -8,10 +8,10 @@ import {
   IconChecks, IconPhone, IconVideo, IconMessage,
 } from '@tabler/icons-react'
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { notifications } from '@mantine/notifications'
 import { useRooms, useMessages, useRealtimeMessages, useSendMessage, useDeleteMessage, usePinMessage, useAddReaction, useMarkRead } from '../../hooks/useMessages'
-import { useSearchProfiles } from '../../hooks/useProfile'
+import { useSearchProfiles, useProfile } from '../../hooks/useProfile'
 import { useAuthStore } from '../../store/useAuthStore'
 import { getInitials, timeAgo, truncate } from '../../utils'
 import { messageService } from '../../services/message.service'
@@ -286,6 +286,8 @@ function RoomItem({ room, isActive, myId, onClick }: { room: Room; isActive: boo
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function MessagesPage() {
   const { roomId: urlRoomId } = useParams<{ roomId?: string }>()
+  const [searchParams] = useSearchParams()
+  const withUserId = searchParams.get('with') ?? ''
   const navigate = useNavigate()
   const authUser = useAuthStore(s => s.user)
   const [activeRoomId, setActiveRoomId] = useState<string | null>(urlRoomId ?? null)
@@ -307,6 +309,7 @@ export default function MessagesPage() {
   const newChatQuery = newChatRaw.replace(/^@+/, '').trim()
   const { data: newChatResults = [] } = useSearchProfiles(newChatQuery)
   const { data: rooms = [], isLoading: roomsLoading, refetch: refetchRooms } = useRooms()
+  const { data: withProfile } = useProfile(withUserId)
   const { data: messages = [], isLoading: msgsLoading } = useMessages(activeRoomId ?? '')
   useRealtimeMessages(activeRoomId ?? '')
   const sendMessage = useSendMessage()
@@ -438,7 +441,9 @@ export default function MessagesPage() {
   }
 
   const activeRoom = rooms.find(r => r.id === activeRoomId)
-  const otherUser = activeRoom ? getOtherParticipant(activeRoom, authUser?.id ?? '') : undefined
+  const otherUser = activeRoom
+    ? getOtherParticipant(activeRoom, authUser?.id ?? '')
+    : (withProfile ?? undefined)
   const filteredRooms = rooms.filter(r => {
     const other = getOtherParticipant(r, authUser?.id ?? '')
     return !roomSearch || other?.full_name?.toLowerCase().includes(roomSearch.toLowerCase())
@@ -506,10 +511,6 @@ export default function MessagesPage() {
             <Text fw={700} c="white" size="xl">NEXORA Messages</Text>
             <Text c="dimmed">Select a conversation to start messaging</Text>
           </Stack>
-        </Center>
-      ) : roomsLoading || !activeRoom ? (
-        <Center style={{ flex: 1 }}>
-          <Loader color="violet" />
         </Center>
       ) : (
         <Box style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
