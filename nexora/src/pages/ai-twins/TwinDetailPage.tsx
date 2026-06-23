@@ -1,10 +1,11 @@
-import { Box, Paper, Avatar, Text, Badge, Button, Group, Stack, TextInput, ActionIcon, ScrollArea, Loader } from '@mantine/core'
-import { IconRobot, IconSend, IconVideo, IconArrowLeft } from '@tabler/icons-react'
+import { Box, Paper, Avatar, Text, Badge, Button, Group, Stack, TextInput, ActionIcon, ScrollArea, Loader, Tooltip } from '@mantine/core'
+import { IconRobot, IconSend, IconVideo, IconArrowLeft, IconCamera } from '@tabler/icons-react'
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import { supabase } from '../../lib/supabase'
+import { useAuthStore } from '../../store/useAuthStore'
 import { formatNumber } from '../../utils'
 import type { AiTwin } from '../../types'
 import VideoCallModal from '../../components/ai-twins/VideoCallModal'
@@ -31,12 +32,40 @@ function useTwin(id: string) {
 export default function TwinDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const authUser = useAuthStore(s => s.user)
+  const qc = useQueryClient()
   const { data: twin, isLoading } = useTwin(id ?? '')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const [videoCallOpen, setVideoCallOpen] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const photoInputRef = useRef<HTMLInputElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
+
+  const isOwner = !!authUser && !!twin && twin.owner_id === authUser.id
+
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !twin) return
+    setUploadingPhoto(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `twin-${twin.id}.${ext}`
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      if (upErr) throw upErr
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
+      const { error: dbErr } = await supabase.from('ai_twins').update({ avatar_url: urlData.publicUrl }).eq('id', twin.id)
+      if (dbErr) throw dbErr
+      qc.invalidateQueries({ queryKey: ['ai-twin', twin.id] })
+      notifications.show({ title: 'Photo updated!', message: 'Your AI Twin photo is now set', color: 'green' })
+    } catch {
+      notifications.show({ title: 'Upload failed', message: 'Could not upload photo', color: 'red' })
+    } finally {
+      setUploadingPhoto(false)
+      e.target.value = ''
+    }
+  }
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -101,9 +130,36 @@ export default function TwinDetailPage() {
           <ActionIcon variant="subtle" c="dimmed" onClick={() => navigate('/ai-twins')}>
             <IconArrowLeft size={18} />
           </ActionIcon>
-          <Avatar src={twin.avatar_url} radius="xl" size={48}>
-            <IconRobot size={24} color="#7c3aed" />
-          </Avatar>
+
+          {/* Avatar with edit-photo overlay for owner */}
+          <Box style={{ position: 'relative', flexShrink: 0 }}>
+            <Avatar src={twin.avatar_url} radius="xl" size={48}>
+              <IconRobot size={24} color="#7c3aed" />
+            </Avatar>
+            {isOwner && (
+              <Tooltip label="Change photo" withArrow position="bottom">
+                <ActionIcon
+                  size={20} radius="xl"
+                  loading={uploadingPhoto}
+                  onClick={() => photoInputRef.current?.click()}
+                  style={{
+                    position: 'absolute', bottom: -2, right: -2,
+                    background: '#7c3aed',
+                    border: '2px solid #0d0d1a',
+                  }}
+                >
+                  <IconCamera size={11} color="white" />
+                </ActionIcon>
+              </Tooltip>
+            )}
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handlePhotoUpload}
+            />
+          </Box>
           <Stack gap={0} style={{ flex: 1 }}>
             <Group gap={6}>
               <Text fw={700} c="white">{twin.name}</Text>
