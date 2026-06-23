@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useMemo } from 'react'
 import { notifications } from '@mantine/notifications'
 import { messageService } from '../services/message.service'
 import { useAuthStore } from '../store/useAuthStore'
@@ -9,13 +9,12 @@ import type { Message } from '../types'
 export function useRooms() {
   const authUser = useAuthStore(s => s.user)
   const qc = useQueryClient()
+  const instanceId = useMemo(() => Math.random().toString(36).slice(2), [])
 
-  // Real-time: when a new room_participant row is inserted for this user,
-  // refetch rooms — this makes the receiver's sidebar update instantly
   useEffect(() => {
     if (!authUser?.id) return
     const channel = supabase
-      .channel(`room-participants-${authUser.id}`)
+      .channel(`room-participants-${authUser.id}-${instanceId}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -34,6 +33,19 @@ export function useRooms() {
     enabled: !!authUser?.id,
     staleTime: 0,
   })
+}
+
+// Reads from the shared React Query cache without creating its own realtime subscription.
+// Safe to call from Sidebar alongside MessagesPage (which has useRooms with a subscription).
+export function useTotalUnreadMessages() {
+  const authUser = useAuthStore(s => s.user)
+  const { data: rooms = [] } = useQuery({
+    queryKey: ['rooms', authUser?.id],
+    queryFn: () => messageService.getRooms(authUser!.id),
+    enabled: !!authUser?.id,
+    staleTime: 0,
+  })
+  return rooms.reduce((sum, r) => sum + (r.unread_count ?? 0), 0)
 }
 
 export function useMessages(roomId: string) {

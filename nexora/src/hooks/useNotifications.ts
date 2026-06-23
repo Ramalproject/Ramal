@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { notificationService } from '../services/notification.service'
 import { useAuthStore } from '../store/useAuthStore'
 import { useNotificationStore } from '../store/useNotificationStore'
@@ -18,13 +18,14 @@ export function useNotifications() {
 export function useNotificationCount() {
   const authUser = useAuthStore(s => s.user)
   const setUnreadCount = useNotificationStore(s => s.setUnreadCount)
+  const instanceId = useMemo(() => Math.random().toString(36).slice(2), [])
 
   useEffect(() => {
     if (!authUser?.id) return
     notificationService.getUnreadCount(authUser.id).then(setUnreadCount)
 
     const channel = supabase
-      .channel('notifications:' + authUser.id)
+      .channel(`notifications:${authUser.id}:${instanceId}`)
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: 'notifications',
         filter: `user_id=eq.${authUser.id}`

@@ -1,7 +1,7 @@
 import { Box, Title, Stack, Paper, Group, Text, Button, Loader, Center } from '@mantine/core'
 import { IconBell, IconChecks, IconDatabase } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
-import { useNotifications, useMarkRead, useMarkAllRead, useNotificationCount } from '../../hooks/useNotifications'
+import { useNotifications, useMarkRead, useMarkAllRead } from '../../hooks/useNotifications'
 import { timeAgo } from '../../utils'
 
 const NOTIF_ICONS: Record<string, string> = {
@@ -11,7 +11,6 @@ const NOTIF_ICONS: Record<string, string> = {
 }
 
 export default function NotificationsPage() {
-  useNotificationCount()
   const navigate = useNavigate()
   const { data: notifs = [], isLoading, error } = useNotifications()
   const markRead = useMarkRead()

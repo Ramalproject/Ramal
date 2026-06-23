@@ -9,7 +9,7 @@ import {
 import { useState } from 'react'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useNotificationStore } from '../../store/useNotificationStore'
-import { useRooms } from '../../hooks/useMessages'
+import { useTotalUnreadMessages } from '../../hooks/useMessages'
 import CreatePostModal from '../feed/CreatePostModal'
 import { getPlanColor, getPlanLabel, getInitials } from '../../utils'
 
@@ -33,8 +33,7 @@ export default function Sidebar({ onMobileClose }: Props) {
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuthStore()
   const { unreadCount } = useNotificationStore()
-  const { data: rooms = [] } = useRooms()
-  const totalUnreadMessages = rooms.reduce((sum, r) => sum + (r.unread_count ?? 0), 0)
+  const totalUnreadMessages = useTotalUnreadMessages()
   const { setColorScheme } = useMantineColorScheme()
   const computedColorScheme = useComputedColorScheme('dark', { getInitialValueInEffect: true })
   const isDark = computedColorScheme === 'dark'
