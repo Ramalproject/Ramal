@@ -150,6 +150,17 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
     }
   }, [twin, speakText])
 
+  // Demo animation: show face moving even when no API key is set
+  useEffect(() => {
+    if (localStorage.getItem(OPENAI_KEY_STORAGE)) return
+    const pulses = [1200, 5000, 10000, 16000]
+    const timers = pulses.map(delay => setTimeout(() => {
+      setIsSpeaking(true)
+      setTimeout(() => setIsSpeaking(false), 2200)
+    }, delay))
+    return () => timers.forEach(clearTimeout)
+  }, [])
+
   // Auto-greet
   useEffect(() => {
     if (greeted.current) return; greeted.current = true
@@ -252,8 +263,8 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
             <input key={photoInputKey} ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
           </Box>
         )}
-        {/* Vignette overlay */}
-        <Box style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 18%, transparent 58%, rgba(0,0,0,0.65) 100%)' }} />
+        {/* Vignette overlay — light top/bottom, keeps lower face visible */}
+        <Box style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 14%, transparent 70%, rgba(0,0,0,0.32) 100%)' }} />
       </Box>
 
       {/* ── TOP BAR ── */}

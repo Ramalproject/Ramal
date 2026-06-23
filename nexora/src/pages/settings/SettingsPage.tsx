@@ -11,7 +11,7 @@ const OPENAI_KEY_STORAGE = 'nexora_openai_api_key'
 const inputStyle = { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' as const }
 const labelStyle = { color: '#8892b0' as const }
 
-const FIX_MESSAGING_SQL = `-- FULL RESET — drops corrupted data and rebuilds clean
+const FIX_MESSAGING_SQL = `-- FULL RESET — drops old tables & policies, rebuilds clean
 -- Run this ONCE in Supabase → SQL Editor → New query → Run
 
 DROP TABLE IF EXISTS message_reactions CASCADE;
@@ -83,7 +83,10 @@ BEGIN
   VALUES (new_room_id, user1, now()), (new_room_id, user2, '1970-01-01'::timestamptz);
   RETURN new_room_id;
 END;
-$$;`
+$$;
+
+-- Enable realtime on room_participants so receivers get instant sidebar updates
+ALTER PUBLICATION supabase_realtime ADD TABLE room_participants;`
 
 export default function SettingsPage() {
   const { profile, user, setProfile } = useAuthStore()

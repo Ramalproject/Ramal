@@ -4,11 +4,12 @@ import type { Message, Room, Profile } from '../types'
 export const messageService = {
   async getRooms(userId: string): Promise<Room[]> {
     // Step 1: rooms this user is in
-    const { data: myRows } = await supabase
+    const { data: myRows, error: rowErr } = await supabase
       .from('room_participants')
       .select('room_id, last_read_at')
       .eq('user_id', userId)
 
+    if (rowErr) console.error('[getRooms] room_participants query failed:', rowErr)
     if (!myRows?.length) return []
     const roomIds = myRows.map(p => p.room_id)
 

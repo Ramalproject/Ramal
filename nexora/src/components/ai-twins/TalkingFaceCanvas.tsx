@@ -7,27 +7,42 @@ interface Props {
   style?: React.CSSProperties
 }
 
-
 export default function TalkingFaceCanvas({ src, speaking, audioLevel, style }: Props) {
-  const canvasRef   = useRef<HTMLCanvasElement>(null)
-  const imgRef      = useRef<HTMLImageElement | null>(null)
-  const loadedRef   = useRef(false)
-  const speakRef    = useRef(speaking)
-  const levelRef    = useRef(audioLevel)
-  const rafRef      = useRef(0)
+  const canvasRef  = useRef<HTMLCanvasElement>(null)
+  const imgRef     = useRef<HTMLImageElement | null>(null)
+  const loadedRef  = useRef(false)
+  const speakRef   = useRef(speaking)
+  const levelRef   = useRef(audioLevel)
+  const rafRef     = useRef(0)
 
-  // Keep refs current — no RAF restarts needed
   useEffect(() => { speakRef.current = speaking },  [speaking])
   useEffect(() => { levelRef.current = audioLevel }, [audioLevel])
 
-  // Load image without crossOrigin (canvas becomes tainted for reads, but draws fine)
+  // Keep canvas buffer in sync with its CSS display size
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const sync = () => {
+      const w = canvas.clientWidth
+      const h = canvas.clientHeight
+      if (w > 0 && h > 0 && (canvas.width !== w || canvas.height !== h)) {
+        canvas.width  = w
+        canvas.height = h
+      }
+    }
+    sync()
+    const ro = new ResizeObserver(sync)
+    ro.observe(canvas)
+    return () => ro.disconnect()
+  }, [])
+
+  // Image loading — try with crossOrigin first, fall back without
   useEffect(() => {
     loadedRef.current = false
     imgRef.current    = null
     const img = new Image()
     img.onload  = () => { imgRef.current = img; loadedRef.current = true }
     img.onerror = () => {
-      // Server rejected CORS — retry without header
       const img2 = new Image()
       img2.onload = () => { imgRef.current = img2; loadedRef.current = true }
       img2.src = src
@@ -37,101 +52,113 @@ export default function TalkingFaceCanvas({ src, speaking, audioLevel, style }: 
     return () => { img.onload = null; img.onerror = null }
   }, [src])
 
-  // Single animation loop — runs for lifetime of component
+  // Single animation loop for the component lifetime
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const W = canvas.width
-    const H = canvas.height
-
     function draw(ts: number) {
       if (!ctx || !canvas) return
-      const img = imgRef.current
+      const W = canvas.width
+      const H = canvas.height
+      if (!W || !H) { rafRef.current = requestAnimationFrame(draw); return }
 
       ctx.clearRect(0, 0, W, H)
 
+      // Background gradient (fills letterbox areas and shows while loading)
+      const bg = ctx.createLinearGradient(0, 0, 0, H)
+      bg.addColorStop(0, '#0d0518')
+      bg.addColorStop(1, '#020108')
+      ctx.fillStyle = bg
+      ctx.fillRect(0, 0, W, H)
+
+      const img = imgRef.current
       if (!img || !loadedRef.current) {
-        // Placeholder while loading
-        ctx.fillStyle = '#1a0838'
-        ctx.fillRect(0, 0, W, H)
         rafRef.current = requestAnimationFrame(draw)
         return
       }
 
-      const t       = ts / 1000
-      const sp      = speakRef.current
-      const al      = levelRef.current
+      const t  = ts / 1000
+      const sp = speakRef.current
+      const al = levelRef.current
+      const iW = img.naturalWidth  || 1
+      const iH = img.naturalHeight || 1
 
-      const iW = img.naturalWidth  || img.width  || 1
-      const iH = img.naturalHeight || img.height || 1
-      const scale  = Math.max(W / iW, H / iH)
+      // ── CONTAIN math — face always fully visible regardless of viewport shape ──
+      const scale  = Math.min(W / iW, H / iH) * 0.97  // 97% leaves a small margin
       const drawW  = iW * scale
       const drawH  = iH * scale
       const baseX  = (W - drawW) / 2
-      const excess = drawH - H
-      const baseY  = -(excess * 0.15)
+      const baseY  = (H - drawH) / 2
 
-      // ── JAW DROP ─────────────────────────────────────────────────────────────
-      if (sp && al > 0.02) {
-        // Natural talking rhythm: multiple sine waves
-        const rhythm   = (Math.sin(t * 14) * 0.5 + Math.sin(t * 9.1) * 0.3 + Math.sin(t * 5.3) * 0.2)
-        const openAmt  = al * Math.max(0, rhythm) * H * 0.10   // max 10% of canvas height
+      // Head movement: energetic when speaking, subtle when idle
+      const bobAmt = sp
+        ? Math.sin(t * 7.3) * 6 + Math.sin(t * 3.1) * 3
+        : Math.sin(t * 0.55) * 4 + Math.sin(t * 0.19) * 7
 
-        // Mouth position: 64% down the DRAWN image area (portrait headshot)
-        const mouthDrawY = baseY + drawH * 0.64   // absolute canvas Y of mouth split
-        const clampedMY  = Math.max(H * 0.40, Math.min(H * 0.85, mouthDrawY))
+      if (sp) {
+        // When speaking: use audioLevel OR synthetic floor (min 0.42)
+        // This ensures visible jaw motion even when TTS audio is not available
+        const level  = Math.max(al, 0.42)
+        const rhythm = Math.sin(t * 13) * 0.5 + Math.sin(t * 8.5) * 0.3 + Math.sin(t * 4.7) * 0.2
+        const openAmt = level * Math.max(0, rhythm) * drawH * 0.11  // up to 11% of face height
 
-        // Source coordinates for the split
-        const mouthImgY  = ((clampedMY - baseY) / drawH) * iH
+        // Mouth sits at 63% of the drawn face height
+        const mouthFaceY = baseY + bobAmt + drawH * 0.63
+        const clampedMY  = Math.max(baseY + drawH * 0.42, Math.min(baseY + drawH * 0.86, mouthFaceY))
+        const mouthImgY  = ((clampedMY - (baseY + bobAmt)) / drawH) * iH
 
-        // Upper face: image top → mouth line
+        // Upper face: forehead → mouth line
         ctx.drawImage(
-          img,
-          0,         0,       iW, mouthImgY,               // src
-          baseX, baseY, drawW, clampedMY - baseY,           // dst
+          img, 0, 0, iW, mouthImgY,
+          baseX, baseY + bobAmt, drawW, clampedMY - (baseY + bobAmt),
         )
 
-        // Lower face: mouth line → bottom, shifted down by openAmt
+        // Lower face: mouth line → chin, shifted down
         ctx.drawImage(
-          img,
-          0,         mouthImgY, iW, iH - mouthImgY,                    // src
-          baseX, clampedMY + openAmt, drawW, drawH - (clampedMY - baseY), // dst
+          img, 0, mouthImgY, iW, iH - mouthImgY,
+          baseX, clampedMY + openAmt, drawW, drawH - (clampedMY - (baseY + bobAmt)),
         )
 
-        // Fill gap with stretched mouth-edge strip
+        // Stretch a thin strip to fill the gap (smooth skin texture in gap)
         if (openAmt > 1) {
-          const gapSrcH = Math.max(2, iH * 0.04)
-          const gapSrcY = Math.max(0, mouthImgY - iH * 0.02)
+          const gapSrcH = Math.max(2, iH * 0.038)
+          const gapSrcY = Math.max(0, mouthImgY - iH * 0.018)
           ctx.drawImage(img, 0, gapSrcY, iW, gapSrcH, baseX, clampedMY, drawW, openAmt + 1)
+          // Mouth interior shadow
+          ctx.fillStyle = `rgba(8,0,18,${Math.min(0.75, openAmt / (drawH * 0.055))})`
+          ctx.beginPath()
+          ctx.ellipse(W / 2, clampedMY + openAmt * 0.35, drawW * 0.065, openAmt * 0.48, 0, 0, Math.PI * 2)
+          ctx.fill()
         }
-
       } else {
-        // Idle: very subtle breathing scale
-        const breathe = 1 + Math.sin(t * 0.75) * 0.0035
-        const bx = baseX - (drawW * (breathe - 1)) / 2
-        const by = baseY - (drawH * (breathe - 1)) / 2
-        ctx.drawImage(img, bx, by, drawW * breathe, drawH * breathe)
+        // Idle: gentle breathe + slow head sway (clearly visible)
+        const breathe = 1 + Math.sin(t * 0.75) * 0.007
+        ctx.drawImage(
+          img,
+          baseX - (drawW * (breathe - 1)) / 2,
+          baseY + bobAmt - (drawH * (breathe - 1)) / 2,
+          drawW * breathe, drawH * breathe,
+        )
       }
 
-      // ── EYE BLINK every ~4 s ─────────────────────────────────────────────────
+      // ── Eye blink every ~4.3 s ───────────────────────────────────────────────
       const blinkCycle = t % 4.3
       if (blinkCycle < 0.14) {
-        const blink   = Math.sin((blinkCycle / 0.14) * Math.PI)
-        // Eyes are at roughly 30–38% of drawn height
-        const eyeTopY = baseY + drawH * 0.30
-        const eyeH    = drawH * 0.08 * blink
+        const blink    = Math.sin((blinkCycle / 0.14) * Math.PI)
+        const eyeTopY  = baseY + bobAmt + drawH * 0.29
+        const eyeH     = drawH * 0.095 * blink
         if (eyeH > 0) {
-          ctx.fillStyle = `rgba(0,0,0,${blink * 0.82})`
+          ctx.fillStyle = `rgba(0,0,0,${blink * 0.86})`
           // Left eye
           ctx.beginPath()
-          ctx.ellipse(W * 0.34, eyeTopY + eyeH * 0.3, drawW * 0.14, eyeH * 0.5, 0, 0, Math.PI * 2)
+          ctx.ellipse(baseX + drawW * 0.30, eyeTopY + eyeH * 0.3, drawW * 0.135, eyeH * 0.52, 0, 0, Math.PI * 2)
           ctx.fill()
           // Right eye
           ctx.beginPath()
-          ctx.ellipse(W * 0.66, eyeTopY + eyeH * 0.3, drawW * 0.14, eyeH * 0.5, 0, 0, Math.PI * 2)
+          ctx.ellipse(baseX + drawW * 0.70, eyeTopY + eyeH * 0.3, drawW * 0.135, eyeH * 0.52, 0, 0, Math.PI * 2)
           ctx.fill()
         }
       }
@@ -141,18 +168,14 @@ export default function TalkingFaceCanvas({ src, speaking, audioLevel, style }: 
 
     rafRef.current = requestAnimationFrame(draw)
     return () => cancelAnimationFrame(rafRef.current)
-  }, []) // single loop, reads refs each frame
+  }, []) // single loop, reads refs every frame
 
   return (
     <canvas
       ref={canvasRef}
-      width={600}
-      height={900}
       style={{
         position: 'absolute', inset: 0,
         width: '100%', height: '100%',
-        objectFit: 'cover',
-        objectPosition: 'center top',
         display: 'block',
         ...style,
       }}

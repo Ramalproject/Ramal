@@ -3,10 +3,31 @@ import { useEffect, useRef } from 'react'
 import { notifications } from '@mantine/notifications'
 import { messageService } from '../services/message.service'
 import { useAuthStore } from '../store/useAuthStore'
+import { supabase } from '../lib/supabase'
 import type { Message } from '../types'
 
 export function useRooms() {
   const authUser = useAuthStore(s => s.user)
+  const qc = useQueryClient()
+
+  // Real-time: when a new room_participant row is inserted for this user,
+  // refetch rooms — this makes the receiver's sidebar update instantly
+  useEffect(() => {
+    if (!authUser?.id) return
+    const channel = supabase
+      .channel(`room-participants-${authUser.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'room_participants',
+        filter: `user_id=eq.${authUser.id}`,
+      }, () => {
+        qc.invalidateQueries({ queryKey: ['rooms', authUser.id] })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [authUser?.id, qc])
+
   return useQuery({
     queryKey: ['rooms', authUser?.id],
     queryFn: () => messageService.getRooms(authUser!.id),
