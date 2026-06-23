@@ -1,5 +1,5 @@
-import { Box, Group, Text, Avatar, Badge, Button, Tabs, Stack, Skeleton, Paper } from '@mantine/core'
-import { IconMapPin, IconLink, IconUserCheck, IconUserPlus, IconMessage } from '@tabler/icons-react'
+import { Box, Group, Text, Avatar, Badge, Button, Tabs, Stack, Skeleton, Paper, Tooltip } from '@mantine/core'
+import { IconMapPin, IconLink, IconUserCheck, IconUserPlus, IconMessage, IconLock } from '@tabler/icons-react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useProfileByUsername, useIsFollowing, useFollowUser, useUnfollowUser } from '../../hooks/useProfile'
@@ -59,6 +59,9 @@ export default function ProfilePage() {
             <Group gap={8}>
               <Text size="xl" fw={700} c="white">{profile.full_name}</Text>
               {profile.is_verified && <Text c="cyan" fw={700}>✓</Text>}
+              {profile.is_private && (
+                <Tooltip label="Private Account"><Badge color="gray" size="sm" leftSection={<IconLock size={10} />}>Private</Badge></Tooltip>
+              )}
               {profile.plan !== 'free' && (
                 <Badge color={getPlanColor(profile.plan)} size="sm">{getPlanLabel(profile.plan)}</Badge>
               )}
@@ -82,23 +85,31 @@ export default function ProfilePage() {
               >
                 {isFollowing ? 'Following' : 'Follow'}
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                color="violet"
-                leftSection={<IconMessage size={14} />}
-                onClick={async () => {
-                  if (!authUser) return
-                  try {
-                    const roomId = await messageService.getOrCreateRoom(authUser.id, profile.id)
-                    navigate(`/messages/${roomId}`)
-                  } catch {
-                    notifications.show({ message: 'Could not open messages', color: 'red' })
-                  }
-                }}
-              >
-                Message
-              </Button>
+              {profile.is_private ? (
+                <Tooltip label="This account is private and cannot receive messages">
+                  <Button size="sm" variant="outline" color="gray" leftSection={<IconLock size={14} />} disabled>
+                    Message
+                  </Button>
+                </Tooltip>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  color="violet"
+                  leftSection={<IconMessage size={14} />}
+                  onClick={async () => {
+                    if (!authUser) return
+                    try {
+                      const roomId = await messageService.getOrCreateRoom(authUser.id, profile.id)
+                      navigate(`/messages/${roomId}`)
+                    } catch {
+                      notifications.show({ message: 'Could not open messages', color: 'red' })
+                    }
+                  }}
+                >
+                  Message
+                </Button>
+              )}
             </Group>
           )}
         </Group>

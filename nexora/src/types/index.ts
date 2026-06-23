@@ -20,6 +20,7 @@ export interface Profile {
   posts_count: number
   is_verified: boolean
   is_creator: boolean
+  is_private?: boolean
   created_at: string
   updated_at: string
 }
