@@ -3,25 +3,74 @@ import type { Message, Room, Profile } from '../types'
 
 export const messageService = {
   async getRooms(userId: string): Promise<Room[]> {
-    // Step 1: rooms this user is in
-    const { data: myRows, error: rowErr } = await supabase
+    // Step 1: rooms this user is in (may be silently empty due to RLS policy)
+    const { data: participantRows, error: rowErr } = await supabase
       .from('room_participants')
       .select('room_id, last_read_at')
       .eq('user_id', userId)
 
     if (rowErr) console.error('[getRooms] room_participants query failed:', rowErr)
-    if (!myRows?.length) return []
+
+    let myRows: { room_id: string; last_read_at: string }[]
+    let lastReadMap: Record<string, string> = {}
+
+    if (participantRows?.length) {
+      myRows = participantRows
+      lastReadMap = Object.fromEntries(participantRows.map(r => [r.room_id, r.last_read_at ?? new Date(0).toISOString()]))
+    } else {
+      // Fallback: discover rooms via messages this user sent (bypasses room_participants RLS)
+      const { data: sentMsgs } = await supabase
+        .from('messages')
+        .select('room_id')
+        .eq('sender_id', userId)
+        .eq('is_deleted', false)
+        .limit(100)
+
+      if (!sentMsgs?.length) return []
+      const uniqueRoomIds = [...new Set(sentMsgs.map(m => m.room_id))]
+      myRows = uniqueRoomIds.map(id => ({ room_id: id, last_read_at: new Date(0).toISOString() }))
+    }
+
     const roomIds = myRows.map(p => p.room_id)
 
-    // Step 2: all participants in those rooms (other than self)
-    const { data: otherRows } = await supabase
+    // Step 2: other participants in those rooms
+    const { data: participantOtherRows } = await supabase
       .from('room_participants')
       .select('room_id, user_id')
       .in('room_id', roomIds)
       .neq('user_id', userId)
 
+    let otherRows: { room_id: string; user_id: string }[]
+
+    if (participantOtherRows?.length) {
+      otherRows = participantOtherRows
+    } else {
+      // Fallback: find other users via messages in those rooms
+      const { data: receivedMsgs } = await supabase
+        .from('messages')
+        .select('room_id, sender_id')
+        .in('room_id', roomIds)
+        .neq('sender_id', userId)
+        .eq('is_deleted', false)
+        .limit(200)
+
+      if (receivedMsgs?.length) {
+        const seen = new Set<string>()
+        otherRows = receivedMsgs
+          .filter(m => {
+            const key = `${m.room_id}:${m.sender_id}`
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+          })
+          .map(m => ({ room_id: m.room_id, user_id: m.sender_id }))
+      } else {
+        otherRows = []
+      }
+    }
+
     // Step 3: profiles for those participants
-    const otherIds = [...new Set((otherRows ?? []).map(r => r.user_id))]
+    const otherIds = [...new Set(otherRows.map(r => r.user_id))]
     const { data: profileRows } = await supabase
       .from('profiles')
       .select('id, full_name, username, avatar_url, plan')
@@ -42,10 +91,9 @@ export const messageService = {
 
     // Step 5: enrich each room
     const enriched = await Promise.all(rooms.map(async room => {
-      const myRow = myRows.find(r => r.room_id === room.id)
-      const lastReadAt = myRow?.last_read_at ?? new Date(0).toISOString()
+      const lastReadAt = lastReadMap[room.id] ?? new Date(0).toISOString()
 
-      const participants = (otherRows ?? [])
+      const participants = otherRows
         .filter(r => r.room_id === room.id)
         .map(r => profileMap[r.user_id])
         .filter(Boolean) as Profile[]

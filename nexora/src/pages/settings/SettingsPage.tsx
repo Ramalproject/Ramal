@@ -7,6 +7,7 @@ import { profileService } from '../../services/profile.service'
 import { useQueryClient } from '@tanstack/react-query'
 
 const OPENAI_KEY_STORAGE = 'nexora_openai_api_key'
+const DID_KEY_STORAGE    = 'nexora_did_api_key'
 
 const inputStyle = { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' as const }
 const labelStyle = { color: '#8892b0' as const }
@@ -103,6 +104,7 @@ export default function SettingsPage() {
   const [isPrivate, setIsPrivate] = useState((profile as { is_private?: boolean } | null)?.is_private ?? false)
   const [savingPrivacy, setSavingPrivacy] = useState(false)
   const [openaiKey, setOpenaiKey] = useState(() => localStorage.getItem(OPENAI_KEY_STORAGE) ?? '')
+  const [didKey, setDidKey] = useState(() => localStorage.getItem(DID_KEY_STORAGE) ?? '')
 
   async function saveProfile() {
     if (!user) return
@@ -136,6 +138,11 @@ export default function SettingsPage() {
   function saveApiKey() {
     localStorage.setItem(OPENAI_KEY_STORAGE, openaiKey.trim())
     notifications.show({ title: 'API Key Saved!', message: 'Your OpenAI API key has been saved locally', color: 'green' })
+  }
+
+  function saveDidKey() {
+    localStorage.setItem(DID_KEY_STORAGE, didKey.trim())
+    notifications.show({ title: 'D-ID Key Saved!', message: 'Realistic face animation enabled — reload the video call', color: 'green' })
   }
 
   return (
@@ -240,6 +247,28 @@ export default function SettingsPage() {
               </Button>
               <Alert color="blue" title="How to get an API Key" radius="md">
                 Visit platform.openai.com → API Keys → Create new secret key. Paste it above and click Save.
+              </Alert>
+
+              {/* D-ID API Key */}
+              <Text fw={600} mt="sm">D-ID API Key <Text span size="xs" c="dimmed">(Optional — for realistic face animation)</Text></Text>
+              <Text c="dimmed" size="sm">
+                With a D-ID key the AI Twin generates real lip-synced video during calls instead of CSS animation. Free tier available.
+              </Text>
+              <TextInput
+                placeholder="your-d-id-api-key"
+                value={didKey}
+                onChange={e => setDidKey(e.target.value)}
+                type="password"
+                styles={{ input: { ...inputStyle, fontFamily: 'monospace' } }}
+              />
+              {didKey && (
+                <Badge color="teal" size="sm">D-ID key saved — real lip-sync enabled</Badge>
+              )}
+              <Button onClick={saveDidKey} variant="outline" color="teal">
+                Save D-ID Key
+              </Button>
+              <Alert color="teal" title="Get a free D-ID key" radius="md">
+                Visit d-id.com → Sign up → API → Create key. Free tier gives 10 credits/month. Paste the key above.
               </Alert>
             </Stack>
           </Paper>

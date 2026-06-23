@@ -5,8 +5,11 @@ import { notifications } from '@mantine/notifications'
 import { supabase } from '../../lib/supabase'
 import type { AiTwin } from '../../types'
 import TalkingFaceCanvas from './TalkingFaceCanvas'
+import DIDStreamingAvatar from './DIDStreamingAvatar'
+import type { DIDHandle } from './DIDStreamingAvatar'
 
 const OPENAI_KEY_STORAGE = 'nexora_openai_api_key'
+const DID_KEY_STORAGE    = 'nexora_did_api_key'
 
 interface ISpeechRecognition {
   continuous: boolean; interimResults: boolean; lang: string
@@ -39,6 +42,9 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
   const [audioLevel,     setAudioLevel]     = useState(0)
   const [photoInputKey,  setPhotoInputKey]  = useState(0)
   const [avatarUrl,      setAvatarUrl]      = useState<string | null>(twin.avatar_url ?? null)
+
+  const [didApiKey]   = useState(() => localStorage.getItem(DID_KEY_STORAGE))
+  const didAvatarRef  = useRef<DIDHandle | null>(null)
 
   const userVideoRef  = useRef<HTMLVideoElement>(null)
   const streamRef     = useRef<MediaStream | null>(null)
@@ -123,6 +129,10 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
     })
   }, [])
 
+  const onDIDSpeakEnd = useCallback(() => {
+    if (!cancelledRef.current) setIsSpeaking(false)
+  }, [])
+
   const sendToAI = useCallback(async (userText: string) => {
     if (cancelledRef.current) return
     const apiKey = localStorage.getItem(OPENAI_KEY_STORAGE)
@@ -143,12 +153,17 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
       historyRef.current.push({ role: 'assistant', content: reply })
       setIsThinking(false); setIsSpeaking(true)
       showSubtitle(reply, 'assistant')
-      await speakText(reply, apiKey)
-      if (!cancelledRef.current) setIsSpeaking(false)
+      if (didApiKey && didAvatarRef.current?.isReady()) {
+        didAvatarRef.current.speak(reply)
+        // isSpeaking(false) fired via onDIDSpeakEnd callback
+      } else {
+        await speakText(reply, apiKey)
+        if (!cancelledRef.current) setIsSpeaking(false)
+      }
     } catch {
       if (!cancelledRef.current) { setIsThinking(false); setIsSpeaking(false) }
     }
-  }, [twin, speakText])
+  }, [twin, speakText, didApiKey])
 
   // Demo animation: show face moving even when no API key is set
   useEffect(() => {
@@ -168,14 +183,20 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
     if (!apiKey) return
     const greets = ['Hey! So nice to see you — how are you doing?', 'Hey! You picked up! How\'s everything going?', 'Oh hey! Great to see you! What\'s up?']
     const greeting = greets[Math.floor(Math.random() * greets.length)]
+    // Extra delay when D-ID is enabled — stream needs ~3 s to initialize
+    const delay = didApiKey ? 3500 : 900
     setTimeout(async () => {
       if (cancelledRef.current) return
       historyRef.current.push({ role: 'assistant', content: greeting })
       setIsSpeaking(true); showSubtitle(greeting, 'assistant')
-      await speakText(greeting, apiKey)
-      if (!cancelledRef.current) setIsSpeaking(false)
-    }, 900)
-  }, [speakText])
+      if (didApiKey && didAvatarRef.current?.isReady()) {
+        didAvatarRef.current.speak(greeting)
+      } else {
+        await speakText(greeting, apiKey)
+        if (!cancelledRef.current) setIsSpeaking(false)
+      }
+    }, delay)
+  }, [speakText, didApiKey])
 
   // Speech recognition
   useEffect(() => {
@@ -232,13 +253,25 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
       <Box style={{ position: 'absolute', inset: 0 }}>
         {avatarUrl ? (
           <>
-            {/* TalkingFaceCanvas: animates mouth/eyes in sync with audio */}
-            <TalkingFaceCanvas
-              src={avatarUrl}
-              speaking={isSpeaking}
-              audioLevel={audioLevel}
-              style={{ position: 'absolute', inset: 0, objectPosition: 'center 20%' }}
-            />
+            {/* D-ID real lip-sync streaming when API key available, else CSS animation */}
+            {didApiKey ? (
+              <DIDStreamingAvatar
+                ref={didAvatarRef}
+                apiKey={didApiKey}
+                photoUrl={avatarUrl}
+                speaking={isSpeaking}
+                audioLevel={audioLevel}
+                onSpeakEnd={onDIDSpeakEnd}
+                style={{ position: 'absolute', inset: 0 }}
+              />
+            ) : (
+              <TalkingFaceCanvas
+                src={avatarUrl}
+                speaking={isSpeaking}
+                audioLevel={audioLevel}
+                style={{ position: 'absolute', inset: 0 }}
+              />
+            )}
             {/* Green speaking border */}
             {isSpeaking && (
               <Box style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2, boxShadow: 'inset 0 0 0 5px rgba(34,197,94,0.7)', animation: 'border-pulse 0.7s ease-in-out infinite' }} />
