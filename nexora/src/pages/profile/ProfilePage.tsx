@@ -10,6 +10,7 @@ import { messageService } from '../../services/message.service'
 import PostCard from '../../components/feed/PostCard'
 
 const MESSAGING_SQL = `-- Run this in Supabase → SQL Editor → New query
+-- FULL MESSAGING SETUP — run once, safe to re-run
 
 DROP POLICY IF EXISTS "participants can see their rooms" ON message_rooms;
 DROP POLICY IF EXISTS "participants can insert rooms" ON message_rooms;
@@ -53,12 +54,26 @@ CREATE TABLE IF NOT EXISTS message_reactions (
   emoji text NOT NULL, created_at timestamptz DEFAULT now(),
   UNIQUE(message_id, user_id)
 );
-CREATE OR REPLACE FUNCTION get_dm_room(user1 uuid, user2 uuid)
-RETURNS uuid LANGUAGE sql SECURITY DEFINER AS $$
-  SELECT r.id FROM message_rooms r
+
+-- SECURITY DEFINER: creates DM room atomically, bypasses all RLS
+CREATE OR REPLACE FUNCTION create_dm_room(user1 uuid, user2 uuid)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  existing_room uuid;
+  new_room_id uuid;
+BEGIN
+  SELECT r.id INTO existing_room FROM message_rooms r
   WHERE (SELECT COUNT(*) FROM room_participants p WHERE p.room_id = r.id AND p.user_id IN (user1, user2)) = 2
   LIMIT 1;
+  IF existing_room IS NOT NULL THEN RETURN existing_room; END IF;
+  new_room_id := gen_random_uuid();
+  INSERT INTO message_rooms (id, updated_at) VALUES (new_room_id, now());
+  INSERT INTO room_participants (room_id, user_id, last_read_at)
+  VALUES (new_room_id, user1, now()), (new_room_id, user2, '1970-01-01'::timestamptz);
+  RETURN new_room_id;
+END;
 $$;
+
 ALTER TABLE message_rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE room_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;

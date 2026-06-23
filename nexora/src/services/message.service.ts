@@ -62,24 +62,12 @@ export const messageService = {
   },
 
   async getOrCreateRoom(userId1: string, userId2: string): Promise<string> {
-    const { data: existing } = await supabase.rpc('get_dm_room', {
+    // Single SECURITY DEFINER RPC — bypasses all RLS, creates room + participants atomically
+    const { data, error } = await supabase.rpc('create_dm_room', {
       user1: userId1, user2: userId2
     })
-    if (existing) return existing as string
-
-    // Generate ID client-side — avoids RLS blocking select() before participants are inserted
-    const roomId = crypto.randomUUID()
-    const { error } = await supabase
-      .from('message_rooms')
-      .insert({ id: roomId, updated_at: new Date().toISOString() })
     if (error) throw error
-
-    await supabase.from('room_participants').insert([
-      { room_id: roomId, user_id: userId1, last_read_at: new Date().toISOString() },
-      { room_id: roomId, user_id: userId2, last_read_at: new Date(0).toISOString() }
-    ])
-
-    return roomId
+    return data as string
   },
 
   async getMessages(roomId: string, page = 0, limit = 50): Promise<Message[]> {
