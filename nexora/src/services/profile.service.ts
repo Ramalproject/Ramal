@@ -62,45 +62,20 @@ export const profileService = {
   },
 
   async followUser(followerId: string, followingId: string): Promise<void> {
-    // Persist locally first so it survives page reloads even if DB table missing
     const s = _getLocalFollows(); s.add(_localFollowKey(followerId, followingId)); _saveLocalFollows(s)
-    // Try follows table — ignore if it doesn't exist
-    await supabase.from('follows').insert({ follower_id: followerId, following_id: followingId }).then(() => {}, () => {})
-    // Direct count update
-    const [{ data: target }, { data: actor }] = await Promise.all([
-      supabase.from('profiles').select('followers_count').eq('id', followingId).single(),
-      supabase.from('profiles').select('following_count').eq('id', followerId).single(),
-    ])
-    await Promise.all([
-      supabase.from('profiles').update({ followers_count: (target?.followers_count ?? 0) + 1 }).eq('id', followingId),
-      supabase.from('profiles').update({ following_count: (actor?.following_count ?? 0) + 1 }).eq('id', followerId),
-    ])
+    // SECURITY DEFINER RPC bypasses RLS — updates both users' counts in DB permanently
+    await supabase.rpc('follow_user', { p_follower_id: followerId, p_following_id: followingId })
   },
 
   async unfollowUser(followerId: string, followingId: string): Promise<void> {
-    // Remove from local store
     const s = _getLocalFollows(); s.delete(_localFollowKey(followerId, followingId)); _saveLocalFollows(s)
-    await supabase.from('follows').delete().match({ follower_id: followerId, following_id: followingId }).then(() => {}, () => {})
-    const [{ data: target }, { data: actor }] = await Promise.all([
-      supabase.from('profiles').select('followers_count').eq('id', followingId).single(),
-      supabase.from('profiles').select('following_count').eq('id', followerId).single(),
-    ])
-    await Promise.all([
-      supabase.from('profiles').update({ followers_count: Math.max(0, (target?.followers_count ?? 1) - 1) }).eq('id', followingId),
-      supabase.from('profiles').update({ following_count: Math.max(0, (actor?.following_count ?? 1) - 1) }).eq('id', followerId),
-    ])
+    await supabase.rpc('unfollow_user', { p_follower_id: followerId, p_following_id: followingId })
   },
 
   async isFollowing(followerId: string, followingId: string): Promise<boolean> {
-    try {
-      const { data, error } = await supabase
-        .from('follows')
-        .select('id')
-        .match({ follower_id: followerId, following_id: followingId })
-        .single()
-      if (!error) return !!data
-    } catch { /* table may not exist */ }
-    // Fallback: check localStorage — works even without the DB table
+    const { data, error } = await supabase.rpc('is_following', { p_follower_id: followerId, p_following_id: followingId })
+    if (!error && data !== null) return data as boolean
+    // Fallback to localStorage if RPC not available yet
     return _getLocalFollows().has(_localFollowKey(followerId, followingId))
   },
 
