@@ -1,5 +1,5 @@
 import { Box, Paper, Avatar, Text, Badge, Button, Group, Stack, TextInput, ActionIcon, ScrollArea, Loader, Tooltip, FileButton } from '@mantine/core'
-import { IconRobot, IconSend, IconVideo, IconArrowLeft, IconCamera, IconSparkles } from '@tabler/icons-react'
+import { IconRobot, IconSend, IconVideo, IconArrowLeft, IconCamera, IconSparkles, IconMicrophone } from '@tabler/icons-react'
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -196,11 +196,23 @@ export default function TwinDetailPage() {
             <Text c="dimmed" size="xs">{formatNumber(twin.chats_count)} chats</Text>
             <Button
               size="sm"
+              leftSection={<IconMicrophone size={14} />}
+              variant="gradient"
+              gradient={{ from: '#7c3aed', to: '#06b6d4' }}
+              radius="xl"
+              onClick={() => navigate(`/ai-twins/${id}/voice`)}
+            >
+              Voice Chat
+            </Button>
+            <Button
+              size="sm"
               leftSection={<IconVideo size={14} />}
-              style={{ background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' }}
+              variant="subtle"
+              color="violet"
+              radius="xl"
               onClick={() => setVideoCallOpen(true)}
             >
-              Video Call
+              Video
             </Button>
           </Group>
         </Group>

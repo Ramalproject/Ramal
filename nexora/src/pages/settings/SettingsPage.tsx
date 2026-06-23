@@ -145,10 +145,18 @@ CREATE POLICY "posts_select"   ON posts       FOR SELECT USING (auth.uid() IS NO
 CREATE POLICY "posts_insert"   ON posts       FOR INSERT WITH CHECK (author_id = auth.uid());
 CREATE POLICY "posts_update"   ON posts       FOR UPDATE USING (author_id = auth.uid());
 CREATE POLICY "posts_delete"   ON posts       FOR DELETE USING (author_id = auth.uid());
-CREATE POLICY "likes_all"      ON post_likes  FOR ALL    USING (user_id = auth.uid());
-CREATE POLICY "likes_select"   ON post_likes  FOR SELECT USING (auth.uid() IS NOT NULL);
-CREATE POLICY "bookmarks_all"  ON bookmarks   FOR ALL    USING (user_id = auth.uid());
-CREATE POLICY "bookmarks_sel"  ON bookmarks   FOR SELECT USING (auth.uid() IS NOT NULL);
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='post_likes') THEN
+    EXECUTE 'CREATE POLICY "likes_all"    ON post_likes FOR ALL    USING (user_id = auth.uid())';
+    EXECUTE 'CREATE POLICY "likes_select" ON post_likes FOR SELECT USING (auth.uid() IS NOT NULL)';
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='bookmarks') THEN
+    EXECUTE 'CREATE POLICY "bookmarks_all" ON bookmarks FOR ALL    USING (user_id = auth.uid())';
+    EXECUTE 'CREATE POLICY "bookmarks_sel" ON bookmarks FOR SELECT USING (auth.uid() IS NOT NULL)';
+  END IF;
+END $$;
 
 -- Step 10: Profiles table — allow reading public profiles
 ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;

@@ -16,6 +16,7 @@ import ProfilePage from './pages/profile/ProfilePage'
 import MessagesPage from './pages/messages/MessagesPage'
 import AiTwinsPage from './pages/ai-twins/AiTwinsPage'
 import TwinDetailPage from './pages/ai-twins/TwinDetailPage'
+import AIConversationPage from './pages/ai-twins/AIConversationPage'
 import TrendingPage from './pages/trending/TrendingPage'
 import AnalyticsPage from './pages/analytics/AnalyticsPage'
 import SettingsPage from './pages/settings/SettingsPage'
@@ -94,6 +95,7 @@ export default function App() {
                     <Route path="messages/:roomId" element={<MessagesPage />} />
                     <Route path="ai-twins" element={<AiTwinsPage />} />
                     <Route path="ai-twins/:id" element={<TwinDetailPage />} />
+                    <Route path="ai-twins/:id/voice" element={<AIConversationPage />} />
                     <Route path="trending" element={<TrendingPage />} />
                     <Route path="analytics" element={<AnalyticsPage />} />
                     <Route path="settings" element={<SettingsPage />} />
