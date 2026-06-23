@@ -43,6 +43,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 html, body, #root { height: 100%; }
+
+/* Light mode: override hardcoded white/light text to be readable */
+[data-mantine-color-scheme="light"] [data-c="white"],
+[data-mantine-color-scheme="light"] [class*="mantine-Text"][data-c="white"] {
+  color: #1a202c !important;
+}
+[data-mantine-color-scheme="light"] body {
+  color: #1a202c;
+}
+[data-mantine-color-scheme="light"] .mantine-Paper-root,
+[data-mantine-color-scheme="light"] .mantine-Modal-content {
+  color: #1a202c;
+}
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
 ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }

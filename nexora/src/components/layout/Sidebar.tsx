@@ -83,7 +83,7 @@ export default function Sidebar({ onMobileClose }: Props) {
             {getInitials(profile?.full_name ?? user?.email ?? 'U')}
           </Avatar>
           <Box style={{ flex: 1, overflow: 'hidden' }}>
-            <Text size="sm" fw={600} c="white" truncate>
+            <Text size="sm" fw={600} c={isDark ? 'white' : 'dark'} truncate>
               {profile?.full_name ?? user?.email?.split('@')[0] ?? 'User'}
             </Text>
             <Badge size="xs" color={getPlanColor(profile?.plan ?? 'free')} variant="filled" mt={2}>
@@ -126,7 +126,7 @@ export default function Sidebar({ onMobileClose }: Props) {
                   padding: '10px 12px',
                   borderRadius: 10,
                   textDecoration: 'none',
-                  color: isActive ? '#e2e8f0' : '#8892b0',
+                  color: isActive ? (isDark ? '#e2e8f0' : '#1a202c') : (isDark ? '#8892b0' : '#4a5568'),
                   background: isActive ? 'rgba(124, 58, 237, 0.15)' : 'transparent',
                   borderLeft: isActive ? '3px solid #7c3aed' : '3px solid transparent',
                   transition: 'all 0.15s ease',
@@ -136,7 +136,7 @@ export default function Sidebar({ onMobileClose }: Props) {
               >
                 {({ isActive }) => (
                   <>
-                    <Icon size={20} color={isActive ? '#7c3aed' : '#8892b0'} />
+                    <Icon size={20} color={isActive ? '#7c3aed' : (isDark ? '#8892b0' : '#4a5568')} />
                     <span style={{ flex: 1 }}>{item.label}</span>
                     {badgeCount > 0 && (
                       <Badge size="xs" color="violet" variant="filled" circle>
