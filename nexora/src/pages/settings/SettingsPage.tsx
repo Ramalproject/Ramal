@@ -148,7 +148,20 @@ CREATE POLICY "posts_delete"   ON posts       FOR DELETE USING (author_id = auth
 CREATE POLICY "likes_all"      ON post_likes  FOR ALL    USING (user_id = auth.uid());
 CREATE POLICY "likes_select"   ON post_likes  FOR SELECT USING (auth.uid() IS NOT NULL);
 CREATE POLICY "bookmarks_all"  ON bookmarks   FOR ALL    USING (user_id = auth.uid());
-CREATE POLICY "bookmarks_sel"  ON bookmarks   FOR SELECT USING (auth.uid() IS NOT NULL);`
+CREATE POLICY "bookmarks_sel"  ON bookmarks   FOR SELECT USING (auth.uid() IS NOT NULL);
+
+-- Step 10: Profiles table — allow reading public profiles
+ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;
+DO $$
+DECLARE pol RECORD;
+BEGIN
+  FOR pol IN SELECT policyname FROM pg_policies WHERE schemaname='public' AND tablename='profiles'
+    AND policyname IN ('profiles_select','profiles_update','profiles_insert')
+  LOOP EXECUTE format('DROP POLICY IF EXISTS %I ON public.profiles', pol.policyname); END LOOP;
+END $$;
+CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (true);
+CREATE POLICY "profiles_update" ON profiles FOR UPDATE USING (id = auth.uid());
+CREATE POLICY "profiles_insert" ON profiles FOR INSERT WITH CHECK (id = auth.uid());`
 
 export default function SettingsPage() {
   const { profile, user, setProfile } = useAuthStore()

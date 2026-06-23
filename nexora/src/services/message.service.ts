@@ -137,7 +137,7 @@ export const messageService = {
       } as Room
     }))
 
-    return enriched.filter(r => (r.participants?.length ?? 0) > 0 || enriched.length === 1)
+    return enriched
   },
 
   async getOrCreateRoom(userId1: string, userId2: string): Promise<string> {

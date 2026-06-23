@@ -9,6 +9,7 @@ import {
 import { useState } from 'react'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useNotificationStore } from '../../store/useNotificationStore'
+import { useRooms } from '../../hooks/useMessages'
 import CreatePostModal from '../feed/CreatePostModal'
 import { getPlanColor, getPlanLabel, getInitials } from '../../utils'
 
@@ -32,6 +33,8 @@ export default function Sidebar({ onMobileClose }: Props) {
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuthStore()
   const { unreadCount } = useNotificationStore()
+  const { data: rooms = [] } = useRooms()
+  const totalUnreadMessages = rooms.reduce((sum, r) => sum + (r.unread_count ?? 0), 0)
   const { setColorScheme } = useMantineColorScheme()
   const computedColorScheme = useComputedColorScheme('dark', { getInitialValueInEffect: true })
   const isDark = computedColorScheme === 'dark'
@@ -110,7 +113,7 @@ export default function Sidebar({ onMobileClose }: Props) {
         <Stack gap={4}>
           {navItems.map((item) => {
             const Icon = item.icon
-            const badgeCount = item.badge === 'notifications' ? unreadCount : 0
+            const badgeCount = item.badge === 'notifications' ? unreadCount : item.badge === 'messages' ? totalUnreadMessages : 0
 
             return (
               <NavLink
