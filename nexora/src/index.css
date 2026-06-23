@@ -13,6 +13,9 @@
   --nex-hover: rgba(255,255,255,0.04);
   --nex-notif-unread: #130d2a;
   --nex-notif-border: #3d1e6a;
+  --nex-text: #e2e8f0;
+  --nex-text-muted: #8892b0;
+  --nex-text-body: #c8cfe0;
   --scrollbar-track: #0f0f1a;
   --scrollbar-thumb: #2d2d4e;
   --scrollbar-thumb-hover: #3d3d6e;
@@ -29,6 +32,9 @@
   --nex-hover: rgba(0,0,0,0.04);
   --nex-notif-unread: #faf5ff;
   --nex-notif-border: #ddd6fe;
+  --nex-text: #1a202c;
+  --nex-text-muted: #4a5568;
+  --nex-text-body: #2d3748;
   --scrollbar-track: #f1f3f5;
   --scrollbar-thumb: #cbd5e1;
   --scrollbar-thumb-hover: #94a3b8;
@@ -37,28 +43,26 @@
 body {
   margin: 0; padding: 0;
   background-color: var(--nex-bg);
-  color: #e2e8f0;
+  color: var(--nex-text);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 html, body, #root { height: 100%; }
 
-/* Light mode: override hardcoded white/light text to be readable */
-[data-mantine-color-scheme="light"] [data-c="white"] {
-  color: #1a202c !important;
-}
-[data-mantine-color-scheme="light"] body {
-  color: #1a202c;
-}
+/* Light mode: fix hardcoded white/light text for readability */
+[data-mantine-color-scheme="light"] body { color: #1a202c; }
 [data-mantine-color-scheme="light"] .mantine-Paper-root,
-[data-mantine-color-scheme="light"] .mantine-Modal-content {
-  color: #1a202c;
-}
+[data-mantine-color-scheme="light"] .mantine-Modal-content { color: #1a202c; }
+
+/* Fix all inputs/textareas to use readable text in both modes */
+input, textarea, [contenteditable] { color: var(--nex-text) !important; }
+[data-mantine-color-scheme="light"] input::placeholder,
+[data-mantine-color-scheme="light"] textarea::placeholder { color: #9ca3af !important; }
+
 /* Preserve white text inside explicitly dark overlay surfaces (e.g. video call) */
-[data-mantine-color-scheme="light"] .nex-dark-surface [data-c="white"] {
-  color: #ffffff !important;
-}
+[data-mantine-color-scheme="light"] .nex-dark-surface,
+[data-mantine-color-scheme="light"] .nex-dark-surface * { color: #ffffff !important; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
 ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }

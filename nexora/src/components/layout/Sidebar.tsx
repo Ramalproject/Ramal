@@ -2,7 +2,7 @@ import { Stack, Text, Avatar, Group, Badge, Button, UnstyledButton, Divider, Box
 import { useComputedColorScheme, useMantineColorScheme } from '@mantine/core'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  IconHome2, IconCompass, IconTrendingUp, IconMessage2, IconBell,
+  IconHome2, IconCompass, IconTrendingUp, IconMessage2,
   IconRobot, IconUsers, IconChartBar, IconSettings, IconPlus, IconLogout,
   IconSun, IconMoon,
 } from '@tabler/icons-react'
@@ -21,7 +21,6 @@ const navItems = [
   { label: 'Explore', icon: IconCompass, path: '/explore' },
   { label: 'Trending', icon: IconTrendingUp, path: '/trending' },
   { label: 'Messages', icon: IconMessage2, path: '/messages', badge: 'messages' },
-  { label: 'Notifications', icon: IconBell, path: '/notifications', badge: 'notifications' },
   { label: 'AI Twins', icon: IconRobot, path: '/ai-twins' },
   { label: 'Communities', icon: IconUsers, path: '/communities' },
   { label: 'Analytics', icon: IconChartBar, path: '/analytics' },

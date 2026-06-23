@@ -277,7 +277,7 @@ export default function PostCard({ post }: Props) {
                           </ActionIcon>
                         )}
                       </Group>
-                      <Text size="xs" c="gray.3" style={{ lineHeight: 1.5 }}>{comment.content}</Text>
+                      <Text size="xs" style={{ lineHeight: 1.5, color: 'var(--nex-text-body)' }}>{comment.content}</Text>
                     </Box>
                   </Group>
                 ))}
@@ -311,7 +311,7 @@ export default function PostCard({ post }: Props) {
                 <Text c="dimmed" size="xs">@{post.author?.username} · {timeAgo(post.created_at)}</Text>
               </Stack>
             </Group>
-            <Text c="gray.3" size="sm" lineClamp={4} style={{ lineHeight: 1.6 }}>{post.content}</Text>
+            <Text size="sm" lineClamp={4} style={{ lineHeight: 1.6, color: 'var(--nex-text-body)' }}>{post.content}</Text>
             {post.media_urls?.length > 0 && (
               <Box mt="sm" style={{ borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
                 <img
