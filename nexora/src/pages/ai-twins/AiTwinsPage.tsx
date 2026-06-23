@@ -1,5 +1,6 @@
 import { Box, Title, Grid, Paper, Avatar, Text, Badge, Button, Group, Stack, Tabs } from '@mantine/core'
 import { IconRobot, IconPlus, IconStar, IconSparkles } from '@tabler/icons-react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
@@ -7,6 +8,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { formatNumber } from '../../utils'
 import type { AiTwin } from '../../types'
 import { FEATURED_CHARACTERS } from '../../data/featuredCharacters'
+import CreateTwinModal from '../../components/ai-twins/CreateTwinModal'
 
 function usePublicTwins() {
   return useQuery({
@@ -130,6 +132,7 @@ export default function AiTwinsPage() {
   const authUser = useAuthStore(s => s.user)
   const { data: publicTwins = [] } = usePublicTwins()
   const { data: myTwins = [] } = useMyTwins(authUser?.id ?? '')
+  const [createOpen, setCreateOpen] = useState(false)
 
   return (
     <Box p="xl" maw={1100} mx="auto">
@@ -137,10 +140,12 @@ export default function AiTwinsPage() {
         <Title order={2}>
           <Group gap={8}><IconRobot color="#7c3aed" size={28} /> AI Twins</Group>
         </Title>
-        <Button leftSection={<IconPlus size={14} />} style={{ background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' }}>
+        <Button leftSection={<IconPlus size={14} />} style={{ background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' }} onClick={() => setCreateOpen(true)}>
           Create My Twin
         </Button>
       </Group>
+
+      <CreateTwinModal opened={createOpen} onClose={() => setCreateOpen(false)} />
 
       {/* Featured Characters — always visible */}
       <Box mb="xl">
@@ -186,7 +191,7 @@ export default function AiTwinsPage() {
             <Box ta="center" py="xl">
               <IconRobot size={64} color="var(--nex-subtle)" />
               <Text c="dimmed" mt="md">You haven&apos;t created any AI Twins yet.</Text>
-              <Button mt="md" leftSection={<IconPlus size={14} />} style={{ background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' }}>
+              <Button mt="md" leftSection={<IconPlus size={14} />} style={{ background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' }} onClick={() => setCreateOpen(true)}>
                 Create My First Twin
               </Button>
             </Box>
