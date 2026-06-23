@@ -476,7 +476,7 @@ export default function MessagesPage() {
             value={roomSearch}
             onChange={e => setRoomSearch(e.target.value)}
             size="sm"
-            styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' } }}
+            styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)' } }}
           />
         </Box>
         <ScrollArea style={{ flex: 1 }}>
@@ -564,7 +564,7 @@ export default function MessagesPage() {
                   onChange={e => setSearchQuery(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleSearch() }}
                   size="xs"
-                  styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' } }}
+                  styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)' } }}
                 />
                 <ActionIcon size="sm" onClick={handleSearch}><IconSearch size={14} /></ActionIcon>
               </Group>
@@ -712,7 +712,7 @@ export default function MessagesPage() {
                   value={msgInput}
                   onChange={e => setMsgInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-                  styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white', borderRadius: 20 } }}
+                  styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', borderRadius: 20 } }}
                 />
 
                 <ActionIcon
@@ -752,7 +752,7 @@ export default function MessagesPage() {
             value={newChatRaw}
             onChange={e => setNewChatRaw(e.target.value)}
             autoFocus
-            styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' } }}
+            styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)' } }}
             mb="sm"
           />
           {newChatQuery.length < 1 ? (
