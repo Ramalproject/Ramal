@@ -1,11 +1,12 @@
 import {
-  Box, Text, Avatar, Group, Stack, TextInput, ActionIcon, Paper,
-  Badge, Loader, Center, ScrollArea, Tooltip, Popover, Modal, Button, Alert
+  Box, Text, Avatar, Group, Stack, ActionIcon, Badge,
+  Loader, Center, ScrollArea, Tooltip, Popover, Modal, Button, Alert,
 } from '@mantine/core'
 import {
   IconSearch, IconSend, IconPaperclip, IconMicrophone, IconMoodSmile,
   IconArrowLeft, IconPin, IconTrash, IconCornerUpLeft, IconX, IconCheck,
   IconChecks, IconPhone, IconVideo, IconMessage, IconDatabase, IconAlertTriangle,
+  IconPlus,
 } from '@tabler/icons-react'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
@@ -48,9 +49,24 @@ function dateDividerLabel(dateStr: string): string {
 // ─── Emoji Picker ────────────────────────────────────────────────────────────
 function EmojiPicker({ onSelect }: { onSelect: (e: string) => void }) {
   return (
-    <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, padding: 8, background: 'var(--nex-border)', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
+    <Box style={{
+      display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4,
+      padding: 10, background: '#0d0f1a',
+      border: '1px solid rgba(124,58,237,0.3)',
+      borderRadius: 12,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+    }}>
       {EMOJI_LIST.map(e => (
-        <button key={e} onClick={() => onSelect(e)} style={{ fontSize: 20, border: 'none', background: 'transparent', cursor: 'pointer', padding: 4, borderRadius: 4 }}>
+        <button
+          key={e}
+          onClick={() => onSelect(e)}
+          style={{
+            fontSize: 20, border: 'none', background: 'transparent', cursor: 'pointer',
+            padding: 6, borderRadius: 8, transition: 'background 0.15s',
+          }}
+          onMouseEnter={ev => (ev.currentTarget as HTMLButtonElement).style.background = 'rgba(124,58,237,0.2)'}
+          onMouseLeave={ev => (ev.currentTarget as HTMLButtonElement).style.background = 'transparent'}
+        >
           {e}
         </button>
       ))}
@@ -62,11 +78,19 @@ function EmojiPicker({ onSelect }: { onSelect: (e: string) => void }) {
 function ReactionBar({ reactions }: { reactions: { emoji: string; count: number }[] }) {
   if (!reactions.length) return null
   return (
-    <Group gap={4} mt={4}>
+    <Group gap={4} mt={6}>
       {reactions.map(({ emoji, count }) => (
-        <Box key={emoji} style={{ background: 'var(--nex-subtle)', borderRadius: 12, padding: '1px 6px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 3 }}>
+        <Box
+          key={emoji}
+          style={{
+            background: 'rgba(124,58,237,0.15)',
+            border: '1px solid rgba(124,58,237,0.25)',
+            borderRadius: 12, padding: '2px 8px', fontSize: 12,
+            display: 'flex', alignItems: 'center', gap: 4,
+          }}
+        >
           <span>{emoji}</span>
-          <Text size="xs" c="dimmed">{count}</Text>
+          <Text size="xs" style={{ color: 'rgba(255,255,255,0.6)' }}>{count}</Text>
         </Box>
       ))}
     </Group>
@@ -96,93 +120,160 @@ function MessageBubble({ msg, isMine, roomId, onReply }: BubbleProps) {
 
   const isDeleted = msg.is_deleted
 
+  // Bug fix: only show reply preview when reply_to exists AND has valid content
+  const hasValidReply = !isDeleted && msg.reply_to && (msg.reply_to.content || msg.reply_to.sender)
+
   return (
     <Group
       justify={isMine ? 'flex-end' : 'flex-start'}
       align="flex-end"
-      gap={6}
+      gap={8}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => { setHovered(false); setEmojiOpen(false) }}
-      style={{ position: 'relative' }}
+      style={{ position: 'relative', marginBottom: 2 }}
     >
+      {/* Left avatar for received messages */}
       {!isMine && (
-        <Avatar src={msg.sender?.avatar_url} radius="xl" size={28}>
+        <Avatar
+          src={msg.sender?.avatar_url}
+          radius="xl"
+          size={28}
+          style={{
+            flexShrink: 0,
+            border: '2px solid rgba(124,58,237,0.3)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          }}
+        >
           {msg.sender?.full_name ? getInitials(msg.sender.full_name) : '?'}
         </Avatar>
       )}
 
-      <Box style={{ maxWidth: '70%' }}>
-        {/* Reply preview */}
-        {msg.reply_to && !isDeleted && (
+      <Box style={{ maxWidth: '68%' }}>
+        {/* Reply preview — only when valid reply data exists */}
+        {hasValidReply && (
           <Box style={{
-            background: 'var(--nex-surface)', borderLeft: '3px solid #7c3aed', borderRadius: '8px 8px 0 0',
-            padding: '4px 8px', marginBottom: 0, opacity: 0.8
+            background: isMine ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.04)',
+            borderLeft: '3px solid #7c3aed',
+            borderRadius: '10px 10px 0 0',
+            padding: '5px 10px',
+            marginBottom: 0,
           }}>
-            <Text size="xs" c="violet" fw={600}>{msg.reply_to.sender?.full_name ?? 'Message'}</Text>
-            <Text size="xs" c="dimmed" lineClamp={1}>{msg.reply_to.content}</Text>
+            <Text size="xs" style={{ color: '#a78bfa', fontWeight: 600 }}>
+              {msg.reply_to!.sender?.full_name ?? '↩ Reply'}
+            </Text>
+            <Text size="xs" style={{ color: 'rgba(255,255,255,0.45)' }} lineClamp={1}>
+              {msg.reply_to!.content}
+            </Text>
           </Box>
         )}
 
-        <Paper
-          p="xs"
+        {/* Bubble */}
+        <Box
           style={{
             background: isDeleted
-              ? 'var(--nex-input)'
+              ? 'rgba(255,255,255,0.04)'
               : isMine
                 ? 'linear-gradient(135deg, #7c3aed, #5b21b6)'
-                : 'var(--nex-border)',
-            borderRadius: msg.reply_to
-              ? '0 8px 8px 8px'
+                : 'rgba(255,255,255,0.06)',
+            border: isDeleted
+              ? '1px solid rgba(255,255,255,0.06)'
               : isMine
-                ? '12px 12px 4px 12px'
-                : '12px 12px 12px 4px',
+                ? 'none'
+                : '1px solid rgba(255,255,255,0.08)',
+            borderRadius: hasValidReply
+              ? isMine ? '0 4px 18px 18px' : '4px 0 18px 18px'
+              : isMine
+                ? '18px 18px 4px 18px'
+                : '4px 18px 18px 18px',
+            padding: '10px 14px',
+            boxShadow: isMine
+              ? '0 4px 16px rgba(124,58,237,0.35)'
+              : '0 2px 8px rgba(0,0,0,0.25)',
           }}
         >
           {/* Attachment */}
           {!isDeleted && msg.attachment_url && (
             msg.message_type === 'image'
-              ? <img src={msg.attachment_url} alt="attachment" style={{ maxWidth: 240, maxHeight: 240, borderRadius: 8, display: 'block', marginBottom: 4 }} />
+              ? <img
+                  src={msg.attachment_url}
+                  alt="attachment"
+                  style={{ maxWidth: 260, maxHeight: 260, borderRadius: 10, display: 'block', marginBottom: 6 }}
+                />
               : msg.message_type === 'voice'
-                ? <Group gap={6} mb={4}>
-                  <IconMicrophone size={16} color="#7c3aed" />
-                  <Text size="xs" c="dimmed">Voice message · {msg.duration ? formatDuration(msg.duration) : '—'}</Text>
-                </Group>
-                : <Group gap={6} mb={4}>
-                  <IconPaperclip size={14} color="#06b6d4" />
-                  <Text size="xs" c="cyan" component="a" href={msg.attachment_url} target="_blank" rel="noreferrer">
-                    {msg.attachment_name ?? 'Download file'}
-                  </Text>
-                </Group>
+                ? <Group gap={8} mb={6} style={{
+                    background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '6px 10px',
+                  }}>
+                    <Box style={{
+                      width: 28, height: 28, borderRadius: '50%',
+                      background: 'rgba(124,58,237,0.4)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <IconMicrophone size={14} color="#a78bfa" />
+                    </Box>
+                    <Text size="xs" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                      Voice message · {msg.duration ? formatDuration(msg.duration) : '—'}
+                    </Text>
+                  </Group>
+                : <Group gap={6} mb={6} style={{
+                    background: 'rgba(6,182,212,0.1)', borderRadius: 8, padding: '6px 10px',
+                    border: '1px solid rgba(6,182,212,0.2)',
+                  }}>
+                    <IconPaperclip size={14} color="#06b6d4" />
+                    <Text size="xs" style={{ color: '#06b6d4' }} component="a" href={msg.attachment_url} target="_blank" rel="noreferrer">
+                      {msg.attachment_name ?? 'Download file'}
+                    </Text>
+                  </Group>
           )}
 
           <Text
-            c={isDeleted ? 'dimmed' : isMine ? 'white' : undefined}
             size="sm"
-            style={{ fontStyle: isDeleted ? 'italic' : 'normal', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}
+            style={{
+              color: isDeleted ? 'rgba(255,255,255,0.35)' : isMine ? '#ffffff' : 'var(--nex-text)',
+              fontStyle: isDeleted ? 'italic' : 'normal',
+              whiteSpace: 'pre-wrap',
+              lineHeight: 1.55,
+            }}
           >
             {msg.content}
           </Text>
 
-          <Group gap={4} justify="flex-end" mt={2}>
-            <Text size="xs" c={isMine ? 'rgba(255,255,255,0.5)' : 'dimmed'}>
+          <Group gap={4} justify="flex-end" mt={4}>
+            <Text size="xs" style={{ color: isMine ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.3)' }}>
               {new Date(msg.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </Text>
             {isMine && !isDeleted && (
-              <IconChecks size={12} color="rgba(255,255,255,0.6)" />
+              <IconChecks size={12} color="rgba(255,255,255,0.5)" />
             )}
           </Group>
-        </Paper>
+        </Box>
 
         <ReactionBar reactions={reactionList} />
       </Box>
 
       {/* Hover action bar */}
       {hovered && !isDeleted && (
-        <Group gap={2} style={{ position: 'absolute', [isMine ? 'left' : 'right']: -90, bottom: 8 }}>
+        <Box
+          style={{
+            position: 'absolute',
+            [isMine ? 'left' : 'right']: -108,
+            bottom: 6,
+            display: 'flex',
+            gap: 2,
+            background: '#0d0f1a',
+            border: '1px solid rgba(124,58,237,0.2)',
+            borderRadius: 20,
+            padding: '3px 5px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+          }}
+        >
           <Popover opened={emojiOpen} onClose={() => setEmojiOpen(false)} position="top" withArrow>
             <Popover.Target>
-              <Tooltip label="React">
-                <ActionIcon size="sm" variant="subtle" c="dimmed" onClick={() => setEmojiOpen(o => !o)}>
+              <Tooltip label="React" withArrow>
+                <ActionIcon
+                  size="sm" variant="subtle" radius="xl"
+                  style={{ color: 'rgba(255,255,255,0.5)' }}
+                  onClick={() => setEmojiOpen(o => !o)}
+                >
                   <IconMoodSmile size={14} />
                 </ActionIcon>
               </Tooltip>
@@ -195,28 +286,38 @@ function MessageBubble({ msg, isMine, roomId, onReply }: BubbleProps) {
             </Popover.Dropdown>
           </Popover>
 
-          <Tooltip label="Reply">
-            <ActionIcon size="sm" variant="subtle" c="dimmed" onClick={() => onReply(msg)}>
+          <Tooltip label="Reply" withArrow>
+            <ActionIcon
+              size="sm" variant="subtle" radius="xl"
+              style={{ color: 'rgba(255,255,255,0.5)' }}
+              onClick={() => onReply(msg)}
+            >
               <IconCornerUpLeft size={14} />
             </ActionIcon>
           </Tooltip>
 
-          <Tooltip label={msg.pinned_at ? 'Unpin' : 'Pin'}>
-            <ActionIcon size="sm" variant="subtle" c="dimmed"
-              onClick={() => pinMsg.mutate({ messageId: msg.id, roomId })}>
+          <Tooltip label={msg.pinned_at ? 'Unpin' : 'Pin'} withArrow>
+            <ActionIcon
+              size="sm" variant="subtle" radius="xl"
+              style={{ color: 'rgba(255,255,255,0.5)' }}
+              onClick={() => pinMsg.mutate({ messageId: msg.id, roomId })}
+            >
               <IconPin size={14} />
             </ActionIcon>
           </Tooltip>
 
           {isMine && (
-            <Tooltip label="Delete">
-              <ActionIcon size="sm" variant="subtle" c="red"
-                onClick={() => deleteMsg.mutate({ messageId: msg.id, roomId })}>
+            <Tooltip label="Delete" withArrow>
+              <ActionIcon
+                size="sm" variant="subtle" radius="xl"
+                style={{ color: '#f87171' }}
+                onClick={() => deleteMsg.mutate({ messageId: msg.id, roomId })}
+              >
                 <IconTrash size={14} />
               </ActionIcon>
             </Tooltip>
           )}
-        </Group>
+        </Box>
       )}
     </Group>
   )
@@ -234,35 +335,69 @@ function RoomItem({ room, isActive, myId, onClick }: { room: Room; isActive: boo
       style={{
         padding: '12px 16px',
         cursor: 'pointer',
-        background: isActive ? 'rgba(124,58,237,0.12)' : 'transparent',
+        background: isActive
+          ? 'linear-gradient(90deg, rgba(124,58,237,0.18) 0%, rgba(124,58,237,0.06) 100%)'
+          : 'transparent',
         borderLeft: isActive ? '3px solid #7c3aed' : '3px solid transparent',
-        transition: 'background 0.15s',
+        transition: 'all 0.15s ease',
+        borderRadius: '0 8px 8px 0',
+        marginRight: 8,
+        marginBottom: 2,
       }}
-      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}
-      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+      onMouseEnter={e => {
+        if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'
+      }}
+      onMouseLeave={e => {
+        if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'
+      }}
     >
-      <Group gap={10}>
-        <Box style={{ position: 'relative' }}>
-          <Avatar src={other?.avatar_url} radius="xl" size={44}>
+      <Group gap={12} wrap="nowrap">
+        <Box style={{ position: 'relative', flexShrink: 0 }}>
+          <Avatar
+            src={other?.avatar_url}
+            radius="xl"
+            size={46}
+            style={{
+              border: isActive ? '2px solid rgba(124,58,237,0.5)' : '2px solid rgba(255,255,255,0.06)',
+              boxShadow: isActive ? '0 0 0 2px rgba(124,58,237,0.15)' : 'none',
+            }}
+          >
             {getInitials(displayName)}
           </Avatar>
           <Box style={{
             position: 'absolute', bottom: 1, right: 1,
-            width: 10, height: 10, borderRadius: '50%',
-            background: '#22c55e', border: '2px solid var(--nex-surface)'
+            width: 11, height: 11, borderRadius: '50%',
+            background: '#22c55e',
+            border: '2px solid #0d0f1a',
+            boxShadow: '0 0 6px rgba(34,197,94,0.6)',
           }} />
         </Box>
-        <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-          <Group gap={0} justify="space-between">
-            <Text fw={600} size="sm" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+
+        <Stack gap={3} style={{ flex: 1, minWidth: 0 }}>
+          <Group gap={0} justify="space-between" wrap="nowrap">
+            <Text
+              fw={600}
+              size="sm"
+              style={{
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                color: isActive ? '#e2e8f0' : 'var(--nex-text)',
+              }}
+            >
               {displayName}
             </Text>
-            <Text size="xs" c="dimmed">
+            <Text size="xs" style={{ color: 'var(--nex-text-muted)', flexShrink: 0, marginLeft: 6 }}>
               {lastMsg ? timeAgo(lastMsg.created_at) : ''}
             </Text>
           </Group>
-          <Group gap={0} justify="space-between">
-            <Text size="xs" c="dimmed" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+          <Group gap={0} justify="space-between" wrap="nowrap">
+            <Text
+              size="xs"
+              style={{
+                color: 'var(--nex-text-muted)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                flex: 1,
+              }}
+            >
               {lastMsg?.is_deleted
                 ? 'Message deleted'
                 : lastMsg?.message_type === 'voice'
@@ -274,7 +409,17 @@ function RoomItem({ room, isActive, myId, onClick }: { room: Room; isActive: boo
                       : truncate(lastMsg?.content ?? '', 32)}
             </Text>
             {(room.unread_count ?? 0) > 0 && (
-              <Badge size="xs" color="violet" variant="filled" style={{ minWidth: 18, padding: '0 5px' }}>
+              <Badge
+                size="xs"
+                style={{
+                  background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
+                  color: '#fff',
+                  minWidth: 20,
+                  padding: '0 6px',
+                  flexShrink: 0,
+                  marginLeft: 6,
+                }}
+              >
                 {room.unread_count}
               </Badge>
             )}
@@ -505,40 +650,109 @@ export default function MessagesPage() {
     groupedMessages.push(msg)
   })
 
+  const myId = authUser?.id ?? ''
+
   return (
     <Box style={{ display: 'flex', height: '100vh', background: 'var(--nex-bg)', overflow: 'hidden' }}>
-      {/* ── Left: Rooms List ─────────────────────────────────────── */}
-      <Box style={{ width: 320, flexShrink: 0, background: 'var(--nex-surface)', borderRight: '1px solid var(--nex-border)', display: 'flex', flexDirection: 'column' }}>
-        <Box p="md" style={{ borderBottom: '1px solid var(--nex-border)' }}>
-          <Group justify="space-between" mb="xs">
-            <Text fw={700} size="lg">Messages</Text>
-            <Tooltip label="New Chat">
-              <ActionIcon variant="subtle" c="violet" onClick={() => setNewChatOpen(true)}><IconMessage size={18} /></ActionIcon>
+
+      {/* ══════════════════════════════════════════════════════
+          LEFT SIDEBAR
+      ══════════════════════════════════════════════════════ */}
+      <Box style={{
+        width: 320,
+        flexShrink: 0,
+        background: '#0d0f1a',
+        borderRight: '1px solid rgba(124,58,237,0.12)',
+        display: 'flex',
+        flexDirection: 'column',
+        boxShadow: '2px 0 24px rgba(0,0,0,0.3)',
+      }}>
+
+        {/* Sidebar Header */}
+        <Box style={{ padding: '20px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <Group justify="space-between" mb={14} align="center">
+            <Group gap={8}>
+              <Box style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
+                boxShadow: '0 0 8px rgba(124,58,237,0.8)',
+              }} />
+              <Text fw={700} size="lg" style={{ color: '#e2e8f0', letterSpacing: '-0.3px' }}>
+                Messages
+              </Text>
+            </Group>
+            <Tooltip label="New Chat" withArrow>
+              <ActionIcon
+                size={34}
+                onClick={() => setNewChatOpen(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
+                  borderRadius: 10,
+                  boxShadow: '0 2px 12px rgba(124,58,237,0.4)',
+                }}
+              >
+                <IconPlus size={16} color="#fff" />
+              </ActionIcon>
             </Tooltip>
           </Group>
-          <TextInput
-            placeholder="Search conversations..."
-            leftSection={<IconSearch size={14} />}
-            value={roomSearch}
-            onChange={e => setRoomSearch(e.target.value)}
-            size="sm"
-            styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)' } }}
-          />
+
+          {/* Search bar */}
+          <Box style={{ position: 'relative' }}>
+            <IconSearch
+              size={14}
+              style={{
+                position: 'absolute', left: 12, top: '50%',
+                transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)',
+                zIndex: 1,
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              value={roomSearch}
+              onChange={e => setRoomSearch(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 10,
+                padding: '8px 12px 8px 34px',
+                color: 'var(--nex-text)',
+                fontSize: 13,
+                outline: 'none',
+                transition: 'border-color 0.15s',
+                boxSizing: 'border-box',
+              }}
+              onFocus={e => (e.target.style.borderColor = 'rgba(124,58,237,0.5)')}
+              onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
+            />
+          </Box>
         </Box>
-        <ScrollArea style={{ flex: 1 }}>
+
+        {/* Room List */}
+        <ScrollArea style={{ flex: 1 }} pt={8}>
           {roomsLoading ? (
             <Center py="xl"><Loader size="sm" color="violet" /></Center>
           ) : filteredRooms.length === 0 ? (
             <Box p="md">
               {rpcWorking === false ? (
                 <>
-                  <Alert color="orange" icon={<IconAlertTriangle size={16} />} title="Database fix needed" radius="md" mb="sm">
+                  <Alert
+                    color="orange"
+                    icon={<IconAlertTriangle size={16} />}
+                    title="Database fix needed"
+                    radius="md"
+                    mb="sm"
+                  >
                     <Text size="xs" mb={8}>
                       Your conversations are hidden due to a Supabase database bug. Run the SQL fix once to permanently repair it.
                     </Text>
-                    <Button size="xs" leftSection={<IconDatabase size={13} />}
+                    <Button
+                      size="xs"
+                      leftSection={<IconDatabase size={13} />}
                       style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}
-                      onClick={() => navigate('/settings?tab=database')}>
+                      onClick={() => navigate('/settings?tab=database')}
+                    >
                       Go to Settings → Database
                     </Button>
                   </Alert>
@@ -546,11 +760,22 @@ export default function MessagesPage() {
                 </>
               ) : (
                 <Stack align="center" gap="xs" pt="xl">
-                  <IconMessage size={40} color="var(--nex-subtle)" />
-                  <Text c="dimmed" size="sm" ta="center">No conversations yet</Text>
-                  <Text c="dimmed" size="xs" ta="center">Click the icon above to start a new chat</Text>
-                  <Button size="xs" variant="light" color="violet" mt={4}
-                    onClick={() => setNewChatOpen(true)}>
+                  <Box style={{
+                    width: 56, height: 56, borderRadius: '50%',
+                    background: 'rgba(124,58,237,0.1)',
+                    border: '1px solid rgba(124,58,237,0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <IconMessage size={24} color="rgba(124,58,237,0.6)" />
+                  </Box>
+                  <Text style={{ color: 'rgba(255,255,255,0.4)' }} size="sm" ta="center">No conversations yet</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.25)' }} size="xs" ta="center">Click + above to start a new chat</Text>
+                  <Button
+                    size="xs"
+                    mt={4}
+                    style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', borderRadius: 8 }}
+                    onClick={() => setNewChatOpen(true)}
+                  >
                     Start a conversation
                   </Button>
                 </Stack>
@@ -562,7 +787,7 @@ export default function MessagesPage() {
                 key={room.id}
                 room={room}
                 isActive={room.id === activeRoomId}
-                myId={authUser?.id ?? ''}
+                myId={myId}
                 onClick={() => selectRoom(room.id)}
               />
             ))
@@ -570,78 +795,203 @@ export default function MessagesPage() {
         </ScrollArea>
       </Box>
 
-      {/* ── Right: Chat Window ───────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════
+          RIGHT: CHAT AREA
+      ══════════════════════════════════════════════════════ */}
       {!activeRoomId ? (
-        <Center style={{ flex: 1 }}>
-          <Stack align="center" gap="md">
-            <Text style={{ fontSize: 48 }}>💬</Text>
-            <Text fw={700} size="xl">NEXORA Messages</Text>
-            <Text c="dimmed">Select a conversation to start messaging</Text>
+        /* Empty state */
+        <Center style={{ flex: 1, background: 'radial-gradient(ellipse at 60% 40%, rgba(124,58,237,0.08) 0%, var(--nex-bg) 70%)' }}>
+          <Stack align="center" gap="lg">
+            <Box style={{
+              width: 80, height: 80, borderRadius: '50%',
+              background: 'linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.15))',
+              border: '1px solid rgba(124,58,237,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 40px rgba(124,58,237,0.2)',
+            }}>
+              <IconMessage size={36} color="#7c3aed" />
+            </Box>
+            <Stack align="center" gap={6}>
+              <Text fw={700} size="xl" style={{ color: '#e2e8f0', letterSpacing: '-0.3px' }}>
+                NEXORA Messages
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.35)' }} size="sm">
+                Select a conversation to start messaging
+              </Text>
+            </Stack>
+            <Button
+              size="sm"
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', borderRadius: 10 }}
+              leftSection={<IconPlus size={14} />}
+              onClick={() => setNewChatOpen(true)}
+            >
+              New Conversation
+            </Button>
           </Stack>
         </Center>
       ) : (
-        <Box style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* Chat Header */}
-          <Box p="md" style={{ background: 'var(--nex-surface)', borderBottom: '1px solid var(--nex-border)', flexShrink: 0 }}>
-            <Group justify="space-between">
-              <Group>
-                <ActionIcon variant="subtle" c="dimmed" hiddenFrom="sm" onClick={() => setActiveRoomId(null)}>
+        <Box style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'radial-gradient(ellipse at 70% 20%, rgba(124,58,237,0.06) 0%, var(--nex-bg) 60%)',
+          overflow: 'hidden',
+        }}>
+
+          {/* ── Chat Header ────────────────────────────────────── */}
+          <Box style={{
+            padding: '14px 20px',
+            background: 'rgba(13,15,26,0.95)',
+            backdropFilter: 'blur(12px)',
+            borderBottom: '1px solid rgba(124,58,237,0.12)',
+            flexShrink: 0,
+            boxShadow: '0 2px 16px rgba(0,0,0,0.3)',
+          }}>
+            <Group justify="space-between" wrap="nowrap">
+              <Group gap={12} wrap="nowrap">
+                <ActionIcon
+                  variant="subtle"
+                  style={{ color: 'rgba(255,255,255,0.4)' }}
+                  hiddenFrom="sm"
+                  onClick={() => setActiveRoomId(null)}
+                >
                   <IconArrowLeft size={18} />
                 </ActionIcon>
-                <Box style={{ position: 'relative' }}>
-                  <Avatar src={otherUser?.avatar_url} radius="xl" size={40}>
+
+                <Box style={{ position: 'relative', flexShrink: 0 }}>
+                  <Avatar
+                    src={otherUser?.avatar_url}
+                    radius="xl"
+                    size={42}
+                    style={{
+                      border: '2px solid rgba(124,58,237,0.4)',
+                      boxShadow: '0 0 0 3px rgba(124,58,237,0.1)',
+                    }}
+                  >
                     {otherUser?.full_name ? getInitials(otherUser.full_name) : '?'}
                   </Avatar>
                   <Box style={{
                     position: 'absolute', bottom: 1, right: 1,
-                    width: 10, height: 10, borderRadius: '50%',
-                    background: '#22c55e', border: '2px solid var(--nex-surface)'
+                    width: 11, height: 11, borderRadius: '50%',
+                    background: '#22c55e',
+                    border: '2px solid #0d0f1a',
+                    boxShadow: '0 0 6px rgba(34,197,94,0.7)',
                   }} />
                 </Box>
-                <Stack gap={0}>
-                  <Text fw={600}>{otherUser?.full_name || otherUser?.username || 'Unknown'}</Text>
-                  <Text size="xs" c="green">Online</Text>
+
+                <Stack gap={1}>
+                  <Text fw={700} size="sm" style={{ color: '#e2e8f0', letterSpacing: '-0.2px' }}>
+                    {otherUser?.full_name || otherUser?.username || 'Unknown'}
+                  </Text>
+                  <Group gap={5} align="center">
+                    <Box style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
+                    <Text size="xs" style={{ color: '#22c55e' }}>Online</Text>
+                  </Group>
                 </Stack>
               </Group>
+
               <Group gap={4}>
-                <Tooltip label="Search messages">
-                  <ActionIcon variant="subtle" c="dimmed" onClick={() => setShowSearch(s => !s)}>
-                    <IconSearch size={18} />
+                <Tooltip label="Search messages" withArrow>
+                  <ActionIcon
+                    size={36}
+                    variant="subtle"
+                    style={{ color: 'rgba(255,255,255,0.4)', borderRadius: 10 }}
+                    onClick={() => setShowSearch(s => !s)}
+                  >
+                    <IconSearch size={17} />
                   </ActionIcon>
                 </Tooltip>
-                <Tooltip label="Voice call">
-                  <ActionIcon variant="subtle" c="dimmed"><IconPhone size={18} /></ActionIcon>
+                <Tooltip label="Voice call" withArrow>
+                  <ActionIcon
+                    size={36}
+                    variant="subtle"
+                    style={{ color: 'rgba(255,255,255,0.4)', borderRadius: 10 }}
+                  >
+                    <IconPhone size={17} />
+                  </ActionIcon>
                 </Tooltip>
-                <Tooltip label="Video call">
-                  <ActionIcon variant="subtle" c="dimmed"><IconVideo size={18} /></ActionIcon>
+                <Tooltip label="Video call" withArrow>
+                  <ActionIcon
+                    size={36}
+                    variant="subtle"
+                    style={{ color: 'rgba(255,255,255,0.4)', borderRadius: 10 }}
+                  >
+                    <IconVideo size={17} />
+                  </ActionIcon>
                 </Tooltip>
-                <Tooltip label="Pinned messages">
-                  <ActionIcon variant="subtle" c="dimmed"><IconPin size={18} /></ActionIcon>
+                <Tooltip label="Pinned messages" withArrow>
+                  <ActionIcon
+                    size={36}
+                    variant="subtle"
+                    style={{ color: 'rgba(255,255,255,0.4)', borderRadius: 10 }}
+                  >
+                    <IconPin size={17} />
+                  </ActionIcon>
                 </Tooltip>
               </Group>
             </Group>
 
-            {/* Search bar */}
+            {/* Inline search bar */}
             {showSearch && (
-              <Group mt="sm">
-                <TextInput
-                  style={{ flex: 1 }}
-                  placeholder="Search in conversation..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleSearch() }}
-                  size="xs"
-                  styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)' } }}
-                />
-                <ActionIcon size="sm" onClick={handleSearch}><IconSearch size={14} /></ActionIcon>
+              <Group mt={12} gap={8}>
+                <Box style={{ flex: 1, position: 'relative' }}>
+                  <IconSearch
+                    size={13}
+                    style={{
+                      position: 'absolute', left: 10, top: '50%',
+                      transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', zIndex: 1,
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search in conversation..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleSearch() }}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(124,58,237,0.3)',
+                      borderRadius: 8,
+                      padding: '7px 10px 7px 30px',
+                      color: 'var(--nex-text)',
+                      fontSize: 13,
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </Box>
+                <ActionIcon
+                  size={32}
+                  onClick={handleSearch}
+                  style={{
+                    background: 'rgba(124,58,237,0.25)',
+                    border: '1px solid rgba(124,58,237,0.4)',
+                    borderRadius: 8,
+                  }}
+                >
+                  <IconSearch size={14} color="#a78bfa" />
+                </ActionIcon>
               </Group>
             )}
 
             {/* Search results */}
             {searchResults.length > 0 && (
-              <Box mt="xs" style={{ maxHeight: 120, overflowY: 'auto' }}>
+              <Box
+                mt={8}
+                style={{
+                  maxHeight: 110, overflowY: 'auto',
+                  background: 'rgba(255,255,255,0.03)',
+                  borderRadius: 8, padding: '4px 8px',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
                 {searchResults.map(r => (
-                  <Text key={r.id} size="xs" c="dimmed" py={2} style={{ borderBottom: '1px solid var(--nex-border)' }}>
+                  <Text
+                    key={r.id}
+                    size="xs"
+                    style={{ color: 'rgba(255,255,255,0.45)', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                  >
                     {r.sender?.full_name}: {truncate(r.content, 60)}
                   </Text>
                 ))}
@@ -649,28 +999,50 @@ export default function MessagesPage() {
             )}
           </Box>
 
-          {/* Messages Area */}
-          <ScrollArea style={{ flex: 1, padding: '16px 24px' }}>
+          {/* ── Messages Area ──────────────────────────────────── */}
+          <ScrollArea style={{ flex: 1 }}>
             {msgsLoading ? (
               <Center py="xl"><Loader color="violet" /></Center>
             ) : messages.length === 0 ? (
               <Center py="xl">
-                <Stack align="center" gap="sm">
-                  <Avatar src={otherUser?.avatar_url} radius="xl" size={60}>
+                <Stack align="center" gap="md">
+                  <Avatar
+                    src={otherUser?.avatar_url}
+                    radius="xl"
+                    size={64}
+                    style={{
+                      border: '3px solid rgba(124,58,237,0.4)',
+                      boxShadow: '0 0 0 4px rgba(124,58,237,0.1)',
+                    }}
+                  >
                     {otherUser?.full_name ? getInitials(otherUser.full_name) : '?'}
                   </Avatar>
-                  <Text fw={600}>{otherUser?.full_name || otherUser?.username || 'Say hello!'}</Text>
-                  <Text c="dimmed" size="sm">Say hello! 👋</Text>
+                  <Stack align="center" gap={4}>
+                    <Text fw={700} size="lg" style={{ color: '#e2e8f0' }}>
+                      {otherUser?.full_name || otherUser?.username || 'Unknown'}
+                    </Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.35)' }} size="sm">
+                      Send a message to start the conversation
+                    </Text>
+                  </Stack>
                 </Stack>
               </Center>
             ) : (
-              <Stack gap="sm" px="md" py="md">
+              <Stack gap={4} px={24} py={20}>
                 {groupedMessages.map(item => {
                   if ('type' in item && item.type === 'divider') {
                     return (
-                      <Group key={item.key} justify="center" my="xs">
-                        <Text size="xs" c="dimmed" px="sm" py={2}
-                          style={{ background: 'var(--nex-input)', borderRadius: 12 }}>{item.label}</Text>
+                      <Group key={item.key} justify="center" my="sm">
+                        <Box style={{
+                          background: 'rgba(255,255,255,0.05)',
+                          border: '1px solid rgba(255,255,255,0.07)',
+                          borderRadius: 20,
+                          padding: '3px 14px',
+                        }}>
+                          <Text size="xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                            {item.label}
+                          </Text>
+                        </Box>
                       </Group>
                     )
                   }
@@ -679,7 +1051,7 @@ export default function MessagesPage() {
                     <MessageBubble
                       key={msg.id}
                       msg={msg}
-                      isMine={msg.sender_id === authUser?.id}
+                      isMine={myId ? msg.sender_id === myId : false}
                       roomId={activeRoomId}
                       onReply={setReplyTo}
                     />
@@ -690,29 +1062,64 @@ export default function MessagesPage() {
             <div ref={endRef} />
           </ScrollArea>
 
-          {/* Input Area */}
-          <Box style={{ background: 'var(--nex-surface)', borderTop: '1px solid var(--nex-border)', flexShrink: 0 }}>
+          {/* ── Input Bar ──────────────────────────────────────── */}
+          <Box style={{
+            background: 'rgba(13,15,26,0.95)',
+            backdropFilter: 'blur(12px)',
+            borderTop: '1px solid rgba(124,58,237,0.12)',
+            flexShrink: 0,
+            padding: '0 16px',
+          }}>
+
             {/* Attachment preview */}
             {attachment && (
-              <Group px="md" pt="sm" gap={8}>
-                <Box style={{ background: 'var(--nex-input)', borderRadius: 8, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <IconPaperclip size={14} color="#06b6d4" />
-                  <Text size="xs" c="cyan">{truncate(attachment.name, 30)}</Text>
-                  <ActionIcon size="xs" variant="subtle" c="dimmed" onClick={() => setAttachment(null)}>
+              <Group px={4} pt={10} gap={8}>
+                <Group
+                  gap={6}
+                  style={{
+                    background: 'rgba(6,182,212,0.08)',
+                    border: '1px solid rgba(6,182,212,0.25)',
+                    borderRadius: 8,
+                    padding: '5px 10px',
+                  }}
+                >
+                  <IconPaperclip size={13} color="#06b6d4" />
+                  <Text size="xs" style={{ color: '#06b6d4' }}>{truncate(attachment.name, 30)}</Text>
+                  <ActionIcon
+                    size="xs"
+                    variant="subtle"
+                    style={{ color: 'rgba(255,255,255,0.4)' }}
+                    onClick={() => setAttachment(null)}
+                  >
                     <IconX size={10} />
                   </ActionIcon>
-                </Box>
+                </Group>
               </Group>
             )}
 
             {/* Reply preview */}
             {replyTo && (
-              <Group px="md" pt="sm" gap={8} align="flex-start">
-                <Box style={{ flex: 1, background: 'var(--nex-input)', borderLeft: '3px solid #7c3aed', borderRadius: '0 8px 8px 0', padding: '4px 8px' }}>
-                  <Text size="xs" c="violet" fw={600}>↩ Replying to {replyTo.sender?.full_name ?? 'message'}</Text>
-                  <Text size="xs" c="dimmed" lineClamp={1}>{replyTo.content}</Text>
+              <Group px={4} pt={10} gap={8} align="flex-start">
+                <Box style={{
+                  flex: 1,
+                  background: 'rgba(124,58,237,0.08)',
+                  borderLeft: '3px solid #7c3aed',
+                  borderRadius: '0 8px 8px 0',
+                  padding: '5px 10px',
+                }}>
+                  <Text size="xs" style={{ color: '#a78bfa', fontWeight: 600 }}>
+                    ↩ Replying to {replyTo.sender?.full_name ?? 'message'}
+                  </Text>
+                  <Text size="xs" style={{ color: 'rgba(255,255,255,0.35)' }} lineClamp={1}>
+                    {replyTo.content}
+                  </Text>
                 </Box>
-                <ActionIcon size="xs" variant="subtle" c="dimmed" onClick={() => setReplyTo(null)}>
+                <ActionIcon
+                  size="xs"
+                  variant="subtle"
+                  style={{ color: 'rgba(255,255,255,0.3)', marginTop: 2 }}
+                  onClick={() => setReplyTo(null)}
+                >
                   <IconX size={12} />
                 </ActionIcon>
               </Group>
@@ -720,22 +1127,38 @@ export default function MessagesPage() {
 
             {/* Recording state */}
             {isRecording ? (
-              <Group px="md" py="sm" gap={8}>
-                <Box style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', animation: 'pulse 1s infinite' }} />
-                <Text c="red" size="sm">Recording... {formatDuration(recordDuration)}</Text>
-                <ActionIcon variant="subtle" c="dimmed" onClick={stopRecording}>
+              <Group py={14} gap={10}>
+                <Box style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: '#ef4444',
+                  boxShadow: '0 0 8px rgba(239,68,68,0.8)',
+                  animation: 'pulse 1s infinite',
+                }} />
+                <Text style={{ color: '#f87171' }} size="sm" fw={500}>
+                  Recording... {formatDuration(recordDuration)}
+                </Text>
+                <ActionIcon
+                  variant="subtle"
+                  style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}
+                  onClick={stopRecording}
+                >
                   <IconX size={14} />
                 </ActionIcon>
                 <ActionIcon
-                  size="lg"
-                  style={{ background: '#ef4444', borderRadius: 8, marginLeft: 'auto' }}
+                  size={36}
                   onClick={stopRecording}
+                  style={{
+                    background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                    borderRadius: 10,
+                    marginLeft: 'auto',
+                    boxShadow: '0 2px 10px rgba(239,68,68,0.4)',
+                  }}
                 >
-                  <IconCheck size={16} />
+                  <IconCheck size={16} color="#fff" />
                 </ActionIcon>
               </Group>
             ) : (
-              <Group px="md" py="sm" gap={8}>
+              <Group py={12} gap={6} align="center">
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -743,10 +1166,16 @@ export default function MessagesPage() {
                   onChange={handleFileSelect}
                   accept="image/*,video/*,.pdf,.doc,.docx,.zip"
                 />
-                <Tooltip label="Attach file">
+
+                <Tooltip label="Attach file" withArrow>
                   <ActionIcon
+                    size={36}
                     variant="subtle"
-                    c={uploading ? 'yellow' : 'dimmed'}
+                    style={{
+                      color: uploading ? '#fbbf24' : 'rgba(255,255,255,0.35)',
+                      borderRadius: 10,
+                      flexShrink: 0,
+                    }}
                     onClick={() => fileInputRef.current?.click()}
                     loading={uploading}
                   >
@@ -754,16 +1183,26 @@ export default function MessagesPage() {
                   </ActionIcon>
                 </Tooltip>
 
-                <Tooltip label="Voice message">
-                  <ActionIcon variant="subtle" c="dimmed" onMouseDown={startRecording}>
+                <Tooltip label="Voice message" withArrow>
+                  <ActionIcon
+                    size={36}
+                    variant="subtle"
+                    style={{ color: 'rgba(255,255,255,0.35)', borderRadius: 10, flexShrink: 0 }}
+                    onMouseDown={startRecording}
+                  >
                     <IconMicrophone size={18} />
                   </ActionIcon>
                 </Tooltip>
 
                 <Popover opened={showEmojiPicker} onClose={() => setShowEmojiPicker(false)} position="top-start" withArrow>
                   <Popover.Target>
-                    <Tooltip label="Emoji">
-                      <ActionIcon variant="subtle" c="dimmed" onClick={() => setShowEmojiPicker(o => !o)}>
+                    <Tooltip label="Emoji" withArrow>
+                      <ActionIcon
+                        size={36}
+                        variant="subtle"
+                        style={{ color: 'rgba(255,255,255,0.35)', borderRadius: 10, flexShrink: 0 }}
+                        onClick={() => setShowEmojiPicker(o => !o)}
+                      >
                         <IconMoodSmile size={18} />
                       </ActionIcon>
                     </Tooltip>
@@ -773,26 +1212,55 @@ export default function MessagesPage() {
                   </Popover.Dropdown>
                 </Popover>
 
-                <TextInput
-                  style={{ flex: 1 }}
-                  placeholder="Type a message..."
-                  value={msgInput}
-                  onChange={e => setMsgInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-                  styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', borderRadius: 20 } }}
-                />
+                {/* Message input */}
+                <Box style={{ flex: 1, position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="Type a message..."
+                    value={msgInput}
+                    onChange={e => setMsgInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: 24,
+                      padding: '10px 18px',
+                      color: 'var(--nex-text)',
+                      fontSize: 14,
+                      outline: 'none',
+                      transition: 'border-color 0.2s, box-shadow 0.2s',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={e => {
+                      e.target.style.borderColor = 'rgba(124,58,237,0.5)'
+                      e.target.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.08)'
+                    }}
+                    onBlur={e => {
+                      e.target.style.borderColor = 'rgba(255,255,255,0.08)'
+                      e.target.style.boxShadow = 'none'
+                    }}
+                  />
+                </Box>
 
+                {/* Send button */}
                 <ActionIcon
-                  size="lg"
+                  size={40}
                   onClick={handleSend}
                   disabled={!msgInput.trim() && !attachment}
                   style={{
-                    background: msgInput.trim() || attachment ? 'linear-gradient(135deg, #7c3aed, #5b21b6)' : 'var(--nex-border)',
+                    background: (msgInput.trim() || attachment)
+                      ? 'linear-gradient(135deg, #7c3aed, #5b21b6)'
+                      : 'rgba(255,255,255,0.06)',
                     borderRadius: '50%',
-                    transition: 'background 0.2s',
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0,
+                    boxShadow: (msgInput.trim() || attachment)
+                      ? '0 2px 12px rgba(124,58,237,0.5)'
+                      : 'none',
                   }}
                 >
-                  <IconSend size={16} />
+                  <IconSend size={17} color={(msgInput.trim() || attachment) ? '#fff' : 'rgba(255,255,255,0.25)'} />
                 </ActionIcon>
               </Group>
             )}
@@ -800,32 +1268,81 @@ export default function MessagesPage() {
         </Box>
       )}
 
-      {/* ── New Chat Modal ── */}
+      {/* ══════════════════════════════════════════════════════
+          NEW CHAT MODAL
+      ══════════════════════════════════════════════════════ */}
       <Modal
         opened={newChatOpen}
         onClose={() => { setNewChatOpen(false); setNewChatRaw('') }}
-        title={<Text fw={700}>New Message</Text>}
-        centered size="sm"
+        title={
+          <Group gap={8}>
+            <Box style={{
+              width: 28, height: 28, borderRadius: 8,
+              background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <IconMessage size={14} color="#fff" />
+            </Box>
+            <Text fw={700} size="md" style={{ color: '#e2e8f0' }}>New Message</Text>
+          </Group>
+        }
+        centered
+        size="sm"
         styles={{
-          header: { background: 'var(--nex-surface-alt)', borderBottom: '1px solid var(--nex-border)' },
-          body: { background: 'var(--nex-surface-alt)', padding: 0 },
-          content: { background: 'var(--nex-surface-alt)' },
+          header: {
+            background: '#0d0f1a',
+            borderBottom: '1px solid rgba(124,58,237,0.15)',
+            paddingBottom: 12,
+          },
+          body: { background: '#0d0f1a', padding: 0 },
+          content: {
+            background: '#0d0f1a',
+            border: '1px solid rgba(124,58,237,0.2)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+          },
+          close: { color: 'rgba(255,255,255,0.4)' },
         }}
       >
         <Box p="md">
-          <TextInput
-            placeholder="Search people..."
-            leftSection={<IconSearch size={14} />}
-            value={newChatRaw}
-            onChange={e => setNewChatRaw(e.target.value)}
-            autoFocus
-            styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)' } }}
-            mb="sm"
-          />
+          {/* Search input */}
+          <Box style={{ position: 'relative', marginBottom: 12 }}>
+            <IconSearch
+              size={14}
+              style={{
+                position: 'absolute', left: 12, top: '50%',
+                transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', zIndex: 1,
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Search people..."
+              value={newChatRaw}
+              onChange={e => setNewChatRaw(e.target.value)}
+              autoFocus
+              style={{
+                width: '100%',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(124,58,237,0.25)',
+                borderRadius: 10,
+                padding: '10px 12px 10px 34px',
+                color: 'var(--nex-text)',
+                fontSize: 14,
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+              onFocus={e => (e.target.style.borderColor = 'rgba(124,58,237,0.6)')}
+              onBlur={e => (e.target.style.borderColor = 'rgba(124,58,237,0.25)')}
+            />
+          </Box>
+
           {newChatQuery.length < 1 ? (
-            <Text c="dimmed" size="sm" ta="center" py="md">Type a name to search</Text>
+            <Center py="md">
+              <Text style={{ color: 'rgba(255,255,255,0.3)' }} size="sm">Type a name to search</Text>
+            </Center>
           ) : newChatResults.length === 0 ? (
-            <Text c="dimmed" size="sm" ta="center" py="md">No users found</Text>
+            <Center py="md">
+              <Text style={{ color: 'rgba(255,255,255,0.3)' }} size="sm">No users found</Text>
+            </Center>
           ) : (
             <Stack gap={4}>
               {newChatResults.filter(u => u.id !== authUser?.id).map(user => (
@@ -833,17 +1350,34 @@ export default function MessagesPage() {
                   key={user.id}
                   onClick={() => !newChatLoading && startNewChat(user.id)}
                   style={{
-                    padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-                    background: 'transparent', transition: 'background 0.15s',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    background: 'transparent',
+                    transition: 'background 0.15s',
+                    border: '1px solid transparent',
                   }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(124,58,237,0.12)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(124,58,237,0.1)'
+                    ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(124,58,237,0.2)'
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.background = 'transparent'
+                    ;(e.currentTarget as HTMLElement).style.borderColor = 'transparent'
+                  }}
                 >
-                  <Group gap={10}>
-                    <Avatar src={user.avatar_url} radius="xl" size={40}>{getInitials(user.full_name)}</Avatar>
-                    <Stack gap={0} style={{ flex: 1 }}>
-                      <Text fw={600} size="sm">{user.full_name}</Text>
-                      <Text c="dimmed" size="xs">@{user.username}</Text>
+                  <Group gap={12}>
+                    <Avatar
+                      src={user.avatar_url}
+                      radius="xl"
+                      size={42}
+                      style={{ border: '2px solid rgba(124,58,237,0.3)' }}
+                    >
+                      {getInitials(user.full_name)}
+                    </Avatar>
+                    <Stack gap={1} style={{ flex: 1 }}>
+                      <Text fw={600} size="sm" style={{ color: '#e2e8f0' }}>{user.full_name}</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.35)' }} size="xs">@{user.username}</Text>
                     </Stack>
                     {newChatLoading && <Loader size="xs" color="violet" />}
                   </Group>
