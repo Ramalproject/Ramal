@@ -306,7 +306,7 @@ export default function MessagesPage() {
 
   const newChatQuery = newChatRaw.replace(/^@+/, '').trim()
   const { data: newChatResults = [] } = useSearchProfiles(newChatQuery)
-  const { data: rooms = [], isLoading: roomsLoading } = useRooms()
+  const { data: rooms = [], isLoading: roomsLoading, refetch: refetchRooms } = useRooms()
   const { data: messages = [], isLoading: msgsLoading } = useMessages(activeRoomId ?? '')
   useRealtimeMessages(activeRoomId ?? '')
   const sendMessage = useSendMessage()
@@ -317,6 +317,10 @@ export default function MessagesPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    if (urlRoomId) refetchRooms()
+  }, [urlRoomId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })

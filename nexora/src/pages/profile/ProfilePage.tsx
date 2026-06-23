@@ -2,6 +2,7 @@ import { Box, Group, Text, Avatar, Badge, Button, Tabs, Stack, Skeleton, Paper, 
 import { IconMapPin, IconLink, IconUserCheck, IconUserPlus, IconMessage, IconLock, IconCopy, IconCheck } from '@tabler/icons-react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useProfileByUsername, useIsFollowing, useFollowUser, useUnfollowUser } from '../../hooks/useProfile'
 import { useUserPosts } from '../../hooks/usePosts'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -102,6 +103,7 @@ export default function ProfilePage() {
   const unfollowUser = useUnfollowUser()
   const [activeTab, setActiveTab] = useState<string | null>('posts')
   const [setupOpen, setSetupOpen] = useState(false)
+  const queryClient = useQueryClient()
 
   if (isLoading) return <Box p="xl"><Skeleton height={300} radius="md" /></Box>
   if (!profile) return <Box p="xl"><Text c="dimmed">Profile not found.</Text></Box>
@@ -228,6 +230,7 @@ export default function ProfilePage() {
                     if (!authUser) return
                     try {
                       const roomId = await messageService.getOrCreateRoom(authUser.id, profile.id)
+                      await queryClient.invalidateQueries({ queryKey: ['rooms'] })
                       navigate(`/messages/${roomId}`)
                     } catch {
                       setSetupOpen(true)
