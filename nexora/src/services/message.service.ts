@@ -3,32 +3,39 @@ import type { Message, Room, Profile } from '../types'
 
 export const messageService = {
   async getRooms(userId: string): Promise<Room[]> {
-    // Step 1: rooms this user is in (may be silently empty due to RLS policy)
-    const { data: participantRows, error: rowErr } = await supabase
-      .from('room_participants')
-      .select('room_id, last_read_at')
-      .eq('user_id', userId)
-
-    if (rowErr) console.error('[getRooms] room_participants query failed:', rowErr)
-
     let myRows: { room_id: string; last_read_at: string }[]
     let lastReadMap: Record<string, string> = {}
 
-    if (participantRows?.length) {
-      myRows = participantRows
-      lastReadMap = Object.fromEntries(participantRows.map(r => [r.room_id, r.last_read_at ?? new Date(0).toISOString()]))
-    } else {
-      // Fallback: discover rooms via messages this user sent (bypasses room_participants RLS)
-      const { data: sentMsgs } = await supabase
-        .from('messages')
-        .select('room_id')
-        .eq('sender_id', userId)
-        .eq('is_deleted', false)
-        .limit(100)
+    // Step 1a: SECURITY DEFINER RPC — fully bypasses RLS (available after running the Settings→Database SQL)
+    const { data: rpcRows, error: rpcErr } = await supabase
+      .rpc('get_my_rooms', { p_user_id: userId })
 
-      if (!sentMsgs?.length) return []
-      const uniqueRoomIds = [...new Set(sentMsgs.map(m => m.room_id))]
-      myRows = uniqueRoomIds.map(id => ({ room_id: id, last_read_at: new Date(0).toISOString() }))
+    if (!rpcErr && rpcRows?.length) {
+      myRows = rpcRows as { room_id: string; last_read_at: string }[]
+      lastReadMap = Object.fromEntries(myRows.map(r => [r.room_id, r.last_read_at ?? new Date(0).toISOString()]))
+    } else {
+      // Step 1b: Direct query (may fail silently due to RLS recursion bug)
+      const { data: participantRows } = await supabase
+        .from('room_participants')
+        .select('room_id, last_read_at')
+        .eq('user_id', userId)
+
+      if (participantRows?.length) {
+        myRows = participantRows
+        lastReadMap = Object.fromEntries(participantRows.map(r => [r.room_id, r.last_read_at ?? new Date(0).toISOString()]))
+      } else {
+        // Step 1c: Last resort — find rooms via messages this user sent
+        const { data: sentMsgs } = await supabase
+          .from('messages')
+          .select('room_id')
+          .eq('sender_id', userId)
+          .eq('is_deleted', false)
+          .limit(100)
+
+        if (!sentMsgs?.length) return []
+        const uniqueRoomIds = [...new Set(sentMsgs.map(m => m.room_id))]
+        myRows = uniqueRoomIds.map(id => ({ room_id: id, last_read_at: new Date(0).toISOString() }))
+      }
     }
 
     const roomIds = myRows.map(p => p.room_id)

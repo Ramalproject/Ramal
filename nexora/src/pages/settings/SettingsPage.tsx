@@ -59,7 +59,20 @@ CREATE POLICY "msg_update"  ON messages FOR UPDATE  USING (sender_id = auth.uid(
 CREATE POLICY "rxn_select" ON message_reactions FOR SELECT USING (auth.uid() IS NOT NULL);
 CREATE POLICY "rxn_all"    ON message_reactions FOR ALL    USING (user_id = auth.uid());
 
--- Step 4: Re-create the create_dm_room function (safe even if it already exists)
+-- Step 4: Helper function — get_my_rooms bypasses RLS entirely (SECURITY DEFINER)
+-- This is what the app calls when room_participants RLS blocks direct queries
+CREATE OR REPLACE FUNCTION get_my_rooms(p_user_id uuid)
+RETURNS TABLE(room_id uuid, last_read_at timestamptz)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  RETURN QUERY
+  SELECT rp.room_id, rp.last_read_at
+  FROM room_participants rp
+  WHERE rp.user_id = p_user_id;
+END;
+$$;
+
+-- Step 5: Re-create the create_dm_room function (safe even if it already exists)
 CREATE OR REPLACE FUNCTION create_dm_room(user1 uuid, user2 uuid)
 RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE existing_room uuid; new_room_id uuid;
@@ -76,7 +89,7 @@ BEGIN
 END;
 $$;
 
--- Step 5: Enable realtime (safe to run even if already enabled)
+-- Step 6: Enable realtime (safe to run even if already enabled)
 DO $$ BEGIN
   ALTER PUBLICATION supabase_realtime ADD TABLE room_participants;
 EXCEPTION WHEN duplicate_object THEN NULL;

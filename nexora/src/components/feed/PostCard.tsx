@@ -15,14 +15,14 @@ interface Props { post: Post }
 // Protected image — blocks right-click save and drag-to-desktop
 function ProtectedImage({ src, alt }: { src: string; alt?: string }) {
   return (
-    <Box style={{ position: 'relative', borderRadius: 8, overflow: 'hidden' }}>
+    <Box style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', background: 'var(--nex-surface)' }}>
       <img
         src={src}
         alt={alt ?? ''}
         draggable={false}
         style={{
-          width: '100%', maxHeight: 320,
-          objectFit: 'cover', display: 'block',
+          width: '100%', maxHeight: 480,
+          objectFit: 'contain', display: 'block',
           userSelect: 'none',
           WebkitUserDrag: 'none',
           pointerEvents: 'none',
@@ -318,7 +318,7 @@ export default function PostCard({ post }: Props) {
                   src={post.media_urls[0]}
                   draggable={false}
                   onContextMenu={e => e.preventDefault()}
-                  style={{ width: '100%', maxHeight: 200, objectFit: 'cover', display: 'block', pointerEvents: 'none' }}
+                  style={{ width: '100%', maxHeight: 280, objectFit: 'contain', display: 'block', pointerEvents: 'none', background: 'var(--nex-surface)' }}
                 />
                 <Box style={{ position: 'absolute', inset: 0 }} onContextMenu={e => e.preventDefault()} />
               </Box>
