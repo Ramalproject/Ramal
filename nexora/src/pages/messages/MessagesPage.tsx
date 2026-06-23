@@ -154,7 +154,7 @@ function MessageBubble({ msg, isMine, roomId, onReply }: BubbleProps) {
           )}
 
           <Text
-            c={isDeleted ? 'dimmed' : 'white'}
+            c={isDeleted ? 'dimmed' : isMine ? 'white' : undefined}
             size="sm"
             style={{ fontStyle: isDeleted ? 'italic' : 'normal', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}
           >
