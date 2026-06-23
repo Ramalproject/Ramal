@@ -2,7 +2,7 @@ import { MantineProvider, Loader, Center, ColorSchemeScript } from '@mantine/cor
 import { Notifications } from '@mantine/notifications'
 import { ModalsProvider } from '@mantine/modals'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { queryClient } from './lib/queryClient'
 import { nexoraTheme } from './lib/theme'
@@ -57,7 +57,7 @@ export default function App() {
       <Notifications position="top-right" />
       <ModalsProvider>
         <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
+          <HashRouter>
             <AuthInitializer />
             <Routes>
               <Route path="/auth/login" element={<LoginPage />} />
@@ -80,7 +80,7 @@ export default function App() {
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </BrowserRouter>
+          </HashRouter>
         </QueryClientProvider>
       </ModalsProvider>
     </MantineProvider>
