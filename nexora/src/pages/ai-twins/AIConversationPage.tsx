@@ -115,7 +115,8 @@ export default function AIConversationPage() {
       state.startSpeaking()
       setTimeout(() => {
         state.stopSpeaking()
-        startListening()
+        state.startListening()
+        startListeningRef.current()
       }, 2200)
       return
     }
@@ -132,13 +133,15 @@ export default function AIConversationPage() {
       const audio = new Audio(url)
       audio.onended = () => {
         state.stopSpeaking()
-        startListening()
+        state.startListening()
+        startListeningRef.current()
         URL.revokeObjectURL(url)
       }
       audio.play()
     } catch (_) {
       state.stopSpeaking()
-      startListening()
+      state.startListening()
+      startListeningRef.current()
     }
   }, [state])
 
@@ -175,10 +178,19 @@ export default function AIConversationPage() {
     await speak(replyText)
   }, [twin, twinName, state, speak])
 
-  // Speech recognition
+  const liveTextRef = useRef('')
+  useEffect(() => { liveTextRef.current = liveText }, [liveText])
+
+  // Speech recognition — use ref to always have latest version in speak()
+  const startListeningRef = useRef<() => void>(() => {})
+
   const startListening = useCallback(() => {
     const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
-    if (!SR) return
+    if (!SR) {
+      // Fallback: no SpeechRecognition — just stay in listening state briefly then go back to idle
+      setTimeout(() => state.stopSpeaking(), 800)
+      return
+    }
 
     const recog = new SR()
     recogRef.current = recog
@@ -186,10 +198,14 @@ export default function AIConversationPage() {
     recog.interimResults = true
     recog.lang = 'en-US'
 
-    recog.onstart = () => { state.startListening(); setLiveText('') }
+    recog.onstart = () => { setLiveText('') }
     recog.onresult = (e: any) => {
       const t = Array.from(e.results as any[]).map((r: any) => r[0].transcript).join('')
       setLiveText(t)
+    }
+    recog.onerror = () => {
+      setLiveText('')
+      state.stopSpeaking()
     }
     recog.onend = () => {
       const final = liveTextRef.current.trim()
@@ -204,11 +220,12 @@ export default function AIConversationPage() {
     recog.start()
   }, [state, chat])
 
-  const liveTextRef = useRef('')
-  useEffect(() => { liveTextRef.current = liveText }, [liveText])
+  // Keep ref current so speak() always calls latest startListening
+  useEffect(() => { startListeningRef.current = startListening }, [startListening])
 
   const handlePrimary = useCallback(() => {
     if (state.phase === 'idle') {
+      state.startListening()  // Immediate visual feedback — don't wait for onstart
       startMic()
       startListening()
     } else if (state.phase === 'listening') {

@@ -51,8 +51,8 @@ function EmojiPicker({ onSelect }: { onSelect: (e: string) => void }) {
   return (
     <Box style={{
       display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4,
-      padding: 10, background: '#0d0f1a',
-      border: '1px solid rgba(124,58,237,0.3)',
+      padding: 10, background: 'var(--nex-surface)',
+      border: '1px solid var(--nex-border)',
       borderRadius: 12,
       boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
     }}>
@@ -152,7 +152,7 @@ function MessageBubble({ msg, isMine, roomId, onReply }: BubbleProps) {
         {/* Reply preview — only when valid reply data exists */}
         {hasValidReply && (
           <Box style={{
-            background: isMine ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.04)',
+            background: isMine ? 'rgba(0,0,0,0.2)' : 'var(--nex-input)',
             borderLeft: '3px solid #7c3aed',
             borderRadius: '10px 10px 0 0',
             padding: '5px 10px',
@@ -161,7 +161,7 @@ function MessageBubble({ msg, isMine, roomId, onReply }: BubbleProps) {
             <Text size="xs" style={{ color: '#a78bfa', fontWeight: 600 }}>
               {msg.reply_to!.sender?.full_name ?? '↩ Reply'}
             </Text>
-            <Text size="xs" style={{ color: 'rgba(255,255,255,0.45)' }} lineClamp={1}>
+            <Text size="xs" style={{ color: 'var(--nex-text-muted)' }} lineClamp={1}>
               {msg.reply_to!.content}
             </Text>
           </Box>
@@ -171,15 +171,15 @@ function MessageBubble({ msg, isMine, roomId, onReply }: BubbleProps) {
         <Box
           style={{
             background: isDeleted
-              ? 'rgba(255,255,255,0.04)'
+              ? 'var(--nex-input)'
               : isMine
                 ? 'linear-gradient(135deg, #7c3aed, #5b21b6)'
-                : 'rgba(255,255,255,0.06)',
+                : 'var(--nex-input)',
             border: isDeleted
-              ? '1px solid rgba(255,255,255,0.06)'
+              ? '1px solid var(--nex-border)'
               : isMine
                 ? 'none'
-                : '1px solid rgba(255,255,255,0.08)',
+                : '1px solid var(--nex-border)',
             borderRadius: hasValidReply
               ? isMine ? '0 4px 18px 18px' : '4px 0 18px 18px'
               : isMine
@@ -228,7 +228,7 @@ function MessageBubble({ msg, isMine, roomId, onReply }: BubbleProps) {
           <Text
             size="sm"
             style={{
-              color: isDeleted ? 'rgba(255,255,255,0.35)' : isMine ? '#ffffff' : 'var(--nex-text)',
+              color: isDeleted ? 'var(--nex-text-muted)' : isMine ? '#ffffff' : 'var(--nex-text)',
               fontStyle: isDeleted ? 'italic' : 'normal',
               whiteSpace: 'pre-wrap',
               lineHeight: 1.55,
@@ -238,7 +238,7 @@ function MessageBubble({ msg, isMine, roomId, onReply }: BubbleProps) {
           </Text>
 
           <Group gap={4} justify="flex-end" mt={4}>
-            <Text size="xs" style={{ color: isMine ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.3)' }}>
+            <Text size="xs" style={{ color: isMine ? 'rgba(255,255,255,0.55)' : 'var(--nex-text-muted)' }}>
               {new Date(msg.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </Text>
             {isMine && !isDeleted && (
@@ -259,7 +259,7 @@ function MessageBubble({ msg, isMine, roomId, onReply }: BubbleProps) {
             bottom: 6,
             display: 'flex',
             gap: 2,
-            background: '#0d0f1a',
+            background: 'var(--nex-surface)',
             border: '1px solid rgba(124,58,237,0.2)',
             borderRadius: 20,
             padding: '3px 5px',
@@ -345,7 +345,7 @@ function RoomItem({ room, isActive, myId, onClick }: { room: Room; isActive: boo
         marginBottom: 2,
       }}
       onMouseEnter={e => {
-        if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'
+        if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(124,58,237,0.08)'
       }}
       onMouseLeave={e => {
         if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'
@@ -368,7 +368,7 @@ function RoomItem({ room, isActive, myId, onClick }: { room: Room; isActive: boo
             position: 'absolute', bottom: 1, right: 1,
             width: 11, height: 11, borderRadius: '50%',
             background: '#22c55e',
-            border: '2px solid #0d0f1a',
+            border: '2px solid var(--nex-surface)',
             boxShadow: '0 0 6px rgba(34,197,94,0.6)',
           }} />
         </Box>
@@ -380,7 +380,7 @@ function RoomItem({ room, isActive, myId, onClick }: { room: Room; isActive: boo
               size="sm"
               style={{
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                color: isActive ? '#e2e8f0' : 'var(--nex-text)',
+                color: 'var(--nex-text)',
               }}
             >
               {displayName}
@@ -661,7 +661,7 @@ export default function MessagesPage() {
       <Box style={{
         width: 320,
         flexShrink: 0,
-        background: '#0d0f1a',
+        background: 'var(--nex-surface)',
         borderRight: '1px solid rgba(124,58,237,0.12)',
         display: 'flex',
         flexDirection: 'column',
@@ -669,7 +669,7 @@ export default function MessagesPage() {
       }}>
 
         {/* Sidebar Header */}
-        <Box style={{ padding: '20px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <Box style={{ padding: '20px 16px 12px', borderBottom: '1px solid var(--nex-border)' }}>
           <Group justify="space-between" mb={14} align="center">
             <Group gap={8}>
               <Box style={{
@@ -677,7 +677,7 @@ export default function MessagesPage() {
                 background: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
                 boxShadow: '0 0 8px rgba(124,58,237,0.8)',
               }} />
-              <Text fw={700} size="lg" style={{ color: '#e2e8f0', letterSpacing: '-0.3px' }}>
+              <Text fw={700} size="lg" style={{ color: 'var(--nex-text)', letterSpacing: '-0.3px' }}>
                 Messages
               </Text>
             </Group>
@@ -702,7 +702,7 @@ export default function MessagesPage() {
               size={14}
               style={{
                 position: 'absolute', left: 12, top: '50%',
-                transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)',
+                transform: 'translateY(-50%)', color: 'var(--nex-text-muted)',
                 zIndex: 1,
               }}
             />
@@ -713,7 +713,7 @@ export default function MessagesPage() {
               onChange={e => setRoomSearch(e.target.value)}
               style={{
                 width: '100%',
-                background: 'rgba(255,255,255,0.05)',
+                background: 'var(--nex-input)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 10,
                 padding: '8px 12px 8px 34px',
@@ -724,7 +724,7 @@ export default function MessagesPage() {
                 boxSizing: 'border-box',
               }}
               onFocus={e => (e.target.style.borderColor = 'rgba(124,58,237,0.5)')}
-              onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
+              onBlur={e => (e.target.style.borderColor = 'var(--nex-border)')}
             />
           </Box>
         </Box>
@@ -768,8 +768,8 @@ export default function MessagesPage() {
                   }}>
                     <IconMessage size={24} color="rgba(124,58,237,0.6)" />
                   </Box>
-                  <Text style={{ color: 'rgba(255,255,255,0.4)' }} size="sm" ta="center">No conversations yet</Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.25)' }} size="xs" ta="center">Click + above to start a new chat</Text>
+                  <Text style={{ color: 'var(--nex-text-muted)' }} size="sm" ta="center">No conversations yet</Text>
+                  <Text style={{ color: 'var(--nex-text-muted)' }} size="xs" ta="center">Click + above to start a new chat</Text>
                   <Button
                     size="xs"
                     mt={4}
@@ -812,10 +812,10 @@ export default function MessagesPage() {
               <IconMessage size={36} color="#7c3aed" />
             </Box>
             <Stack align="center" gap={6}>
-              <Text fw={700} size="xl" style={{ color: '#e2e8f0', letterSpacing: '-0.3px' }}>
+              <Text fw={700} size="xl" style={{ color: 'var(--nex-text)', letterSpacing: '-0.3px' }}>
                 NEXORA Messages
               </Text>
-              <Text style={{ color: 'rgba(255,255,255,0.35)' }} size="sm">
+              <Text style={{ color: 'var(--nex-text-muted)' }} size="sm">
                 Select a conversation to start messaging
               </Text>
             </Stack>
@@ -841,8 +841,7 @@ export default function MessagesPage() {
           {/* ── Chat Header ────────────────────────────────────── */}
           <Box style={{
             padding: '14px 20px',
-            background: 'rgba(13,15,26,0.95)',
-            backdropFilter: 'blur(12px)',
+            background: 'var(--nex-surface)',
             borderBottom: '1px solid rgba(124,58,237,0.12)',
             flexShrink: 0,
             boxShadow: '0 2px 16px rgba(0,0,0,0.3)',
@@ -851,7 +850,7 @@ export default function MessagesPage() {
               <Group gap={12} wrap="nowrap">
                 <ActionIcon
                   variant="subtle"
-                  style={{ color: 'rgba(255,255,255,0.4)' }}
+                  style={{ color: 'var(--nex-text-muted)' }}
                   hiddenFrom="sm"
                   onClick={() => setActiveRoomId(null)}
                 >
@@ -874,13 +873,13 @@ export default function MessagesPage() {
                     position: 'absolute', bottom: 1, right: 1,
                     width: 11, height: 11, borderRadius: '50%',
                     background: '#22c55e',
-                    border: '2px solid #0d0f1a',
+                    border: '2px solid var(--nex-surface)',
                     boxShadow: '0 0 6px rgba(34,197,94,0.7)',
                   }} />
                 </Box>
 
                 <Stack gap={1}>
-                  <Text fw={700} size="sm" style={{ color: '#e2e8f0', letterSpacing: '-0.2px' }}>
+                  <Text fw={700} size="sm" style={{ color: 'var(--nex-text)', letterSpacing: '-0.2px' }}>
                     {otherUser?.full_name || otherUser?.username || 'Unknown'}
                   </Text>
                   <Group gap={5} align="center">
@@ -895,7 +894,7 @@ export default function MessagesPage() {
                   <ActionIcon
                     size={36}
                     variant="subtle"
-                    style={{ color: 'rgba(255,255,255,0.4)', borderRadius: 10 }}
+                    style={{ color: 'var(--nex-text-muted)', borderRadius: 10 }}
                     onClick={() => setShowSearch(s => !s)}
                   >
                     <IconSearch size={17} />
@@ -905,7 +904,7 @@ export default function MessagesPage() {
                   <ActionIcon
                     size={36}
                     variant="subtle"
-                    style={{ color: 'rgba(255,255,255,0.4)', borderRadius: 10 }}
+                    style={{ color: 'var(--nex-text-muted)', borderRadius: 10 }}
                   >
                     <IconPhone size={17} />
                   </ActionIcon>
@@ -914,7 +913,7 @@ export default function MessagesPage() {
                   <ActionIcon
                     size={36}
                     variant="subtle"
-                    style={{ color: 'rgba(255,255,255,0.4)', borderRadius: 10 }}
+                    style={{ color: 'var(--nex-text-muted)', borderRadius: 10 }}
                   >
                     <IconVideo size={17} />
                   </ActionIcon>
@@ -923,7 +922,7 @@ export default function MessagesPage() {
                   <ActionIcon
                     size={36}
                     variant="subtle"
-                    style={{ color: 'rgba(255,255,255,0.4)', borderRadius: 10 }}
+                    style={{ color: 'var(--nex-text-muted)', borderRadius: 10 }}
                   >
                     <IconPin size={17} />
                   </ActionIcon>
@@ -939,7 +938,7 @@ export default function MessagesPage() {
                     size={13}
                     style={{
                       position: 'absolute', left: 10, top: '50%',
-                      transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', zIndex: 1,
+                      transform: 'translateY(-50%)', color: 'var(--nex-text-muted)', zIndex: 1,
                     }}
                   />
                   <input
@@ -950,7 +949,7 @@ export default function MessagesPage() {
                     onKeyDown={e => { if (e.key === 'Enter') handleSearch() }}
                     style={{
                       width: '100%',
-                      background: 'rgba(255,255,255,0.05)',
+                      background: 'var(--nex-input)',
                       border: '1px solid rgba(124,58,237,0.3)',
                       borderRadius: 8,
                       padding: '7px 10px 7px 30px',
@@ -981,7 +980,7 @@ export default function MessagesPage() {
                 mt={8}
                 style={{
                   maxHeight: 110, overflowY: 'auto',
-                  background: 'rgba(255,255,255,0.03)',
+                  background: 'var(--nex-input)',
                   borderRadius: 8, padding: '4px 8px',
                   border: '1px solid rgba(255,255,255,0.06)',
                 }}
@@ -990,7 +989,7 @@ export default function MessagesPage() {
                   <Text
                     key={r.id}
                     size="xs"
-                    style={{ color: 'rgba(255,255,255,0.45)', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                    style={{ color: 'var(--nex-text-muted)', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
                   >
                     {r.sender?.full_name}: {truncate(r.content, 60)}
                   </Text>
@@ -1018,10 +1017,10 @@ export default function MessagesPage() {
                     {otherUser?.full_name ? getInitials(otherUser.full_name) : '?'}
                   </Avatar>
                   <Stack align="center" gap={4}>
-                    <Text fw={700} size="lg" style={{ color: '#e2e8f0' }}>
+                    <Text fw={700} size="lg" style={{ color: 'var(--nex-text)' }}>
                       {otherUser?.full_name || otherUser?.username || 'Unknown'}
                     </Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.35)' }} size="sm">
+                    <Text style={{ color: 'var(--nex-text-muted)' }} size="sm">
                       Send a message to start the conversation
                     </Text>
                   </Stack>
@@ -1034,12 +1033,12 @@ export default function MessagesPage() {
                     return (
                       <Group key={item.key} justify="center" my="sm">
                         <Box style={{
-                          background: 'rgba(255,255,255,0.05)',
-                          border: '1px solid rgba(255,255,255,0.07)',
+                          background: 'var(--nex-input)',
+                          border: '1px solid var(--nex-border)',
                           borderRadius: 20,
                           padding: '3px 14px',
                         }}>
-                          <Text size="xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                          <Text size="xs" style={{ color: 'var(--nex-text-muted)' }}>
                             {item.label}
                           </Text>
                         </Box>
@@ -1064,8 +1063,7 @@ export default function MessagesPage() {
 
           {/* ── Input Bar ──────────────────────────────────────── */}
           <Box style={{
-            background: 'rgba(13,15,26,0.95)',
-            backdropFilter: 'blur(12px)',
+            background: 'var(--nex-surface)',
             borderTop: '1px solid rgba(124,58,237,0.12)',
             flexShrink: 0,
             padding: '0 16px',
@@ -1088,7 +1086,7 @@ export default function MessagesPage() {
                   <ActionIcon
                     size="xs"
                     variant="subtle"
-                    style={{ color: 'rgba(255,255,255,0.4)' }}
+                    style={{ color: 'var(--nex-text-muted)' }}
                     onClick={() => setAttachment(null)}
                   >
                     <IconX size={10} />
@@ -1110,14 +1108,14 @@ export default function MessagesPage() {
                   <Text size="xs" style={{ color: '#a78bfa', fontWeight: 600 }}>
                     ↩ Replying to {replyTo.sender?.full_name ?? 'message'}
                   </Text>
-                  <Text size="xs" style={{ color: 'rgba(255,255,255,0.35)' }} lineClamp={1}>
+                  <Text size="xs" style={{ color: 'var(--nex-text-muted)' }} lineClamp={1}>
                     {replyTo.content}
                   </Text>
                 </Box>
                 <ActionIcon
                   size="xs"
                   variant="subtle"
-                  style={{ color: 'rgba(255,255,255,0.3)', marginTop: 2 }}
+                  style={{ color: 'var(--nex-text-muted)', marginTop: 2 }}
                   onClick={() => setReplyTo(null)}
                 >
                   <IconX size={12} />
@@ -1139,7 +1137,7 @@ export default function MessagesPage() {
                 </Text>
                 <ActionIcon
                   variant="subtle"
-                  style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}
+                  style={{ color: 'var(--nex-text-muted)', marginLeft: 4 }}
                   onClick={stopRecording}
                 >
                   <IconX size={14} />
@@ -1172,7 +1170,7 @@ export default function MessagesPage() {
                     size={36}
                     variant="subtle"
                     style={{
-                      color: uploading ? '#fbbf24' : 'rgba(255,255,255,0.35)',
+                      color: uploading ? '#fbbf24' : 'var(--nex-text-muted)',
                       borderRadius: 10,
                       flexShrink: 0,
                     }}
@@ -1187,7 +1185,7 @@ export default function MessagesPage() {
                   <ActionIcon
                     size={36}
                     variant="subtle"
-                    style={{ color: 'rgba(255,255,255,0.35)', borderRadius: 10, flexShrink: 0 }}
+                    style={{ color: 'var(--nex-text-muted)', borderRadius: 10, flexShrink: 0 }}
                     onMouseDown={startRecording}
                   >
                     <IconMicrophone size={18} />
@@ -1200,7 +1198,7 @@ export default function MessagesPage() {
                       <ActionIcon
                         size={36}
                         variant="subtle"
-                        style={{ color: 'rgba(255,255,255,0.35)', borderRadius: 10, flexShrink: 0 }}
+                        style={{ color: 'var(--nex-text-muted)', borderRadius: 10, flexShrink: 0 }}
                         onClick={() => setShowEmojiPicker(o => !o)}
                       >
                         <IconMoodSmile size={18} />
@@ -1222,8 +1220,8 @@ export default function MessagesPage() {
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                     style={{
                       width: '100%',
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'var(--nex-input)',
+                      border: '1px solid var(--nex-border)',
                       borderRadius: 24,
                       padding: '10px 18px',
                       color: 'var(--nex-text)',
@@ -1237,7 +1235,7 @@ export default function MessagesPage() {
                       e.target.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.08)'
                     }}
                     onBlur={e => {
-                      e.target.style.borderColor = 'rgba(255,255,255,0.08)'
+                      e.target.style.borderColor = 'var(--nex-border)'
                       e.target.style.boxShadow = 'none'
                     }}
                   />
@@ -1251,7 +1249,7 @@ export default function MessagesPage() {
                   style={{
                     background: (msgInput.trim() || attachment)
                       ? 'linear-gradient(135deg, #7c3aed, #5b21b6)'
-                      : 'rgba(255,255,255,0.06)',
+                      : 'var(--nex-border)',
                     borderRadius: '50%',
                     transition: 'all 0.2s ease',
                     flexShrink: 0,
@@ -1260,7 +1258,7 @@ export default function MessagesPage() {
                       : 'none',
                   }}
                 >
-                  <IconSend size={17} color={(msgInput.trim() || attachment) ? '#fff' : 'rgba(255,255,255,0.25)'} />
+                  <IconSend size={17} color={(msgInput.trim() || attachment) ? '#fff' : 'var(--nex-text-muted)'} />
                 </ActionIcon>
               </Group>
             )}
@@ -1283,24 +1281,24 @@ export default function MessagesPage() {
             }}>
               <IconMessage size={14} color="#fff" />
             </Box>
-            <Text fw={700} size="md" style={{ color: '#e2e8f0' }}>New Message</Text>
+            <Text fw={700} size="md" style={{ color: 'var(--nex-text)' }}>New Message</Text>
           </Group>
         }
         centered
         size="sm"
         styles={{
           header: {
-            background: '#0d0f1a',
+            background: 'var(--nex-surface)',
             borderBottom: '1px solid rgba(124,58,237,0.15)',
             paddingBottom: 12,
           },
-          body: { background: '#0d0f1a', padding: 0 },
+          body: { background: 'var(--nex-surface)', padding: 0 },
           content: {
-            background: '#0d0f1a',
+            background: 'var(--nex-surface)',
             border: '1px solid rgba(124,58,237,0.2)',
             boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
           },
-          close: { color: 'rgba(255,255,255,0.4)' },
+          close: { color: 'var(--nex-text-muted)' },
         }}
       >
         <Box p="md">
@@ -1310,7 +1308,7 @@ export default function MessagesPage() {
               size={14}
               style={{
                 position: 'absolute', left: 12, top: '50%',
-                transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', zIndex: 1,
+                transform: 'translateY(-50%)', color: 'var(--nex-text-muted)', zIndex: 1,
               }}
             />
             <input
@@ -1321,7 +1319,7 @@ export default function MessagesPage() {
               autoFocus
               style={{
                 width: '100%',
-                background: 'rgba(255,255,255,0.05)',
+                background: 'var(--nex-input)',
                 border: '1px solid rgba(124,58,237,0.25)',
                 borderRadius: 10,
                 padding: '10px 12px 10px 34px',
@@ -1337,11 +1335,11 @@ export default function MessagesPage() {
 
           {newChatQuery.length < 1 ? (
             <Center py="md">
-              <Text style={{ color: 'rgba(255,255,255,0.3)' }} size="sm">Type a name to search</Text>
+              <Text style={{ color: 'var(--nex-text-muted)' }} size="sm">Type a name to search</Text>
             </Center>
           ) : newChatResults.length === 0 ? (
             <Center py="md">
-              <Text style={{ color: 'rgba(255,255,255,0.3)' }} size="sm">No users found</Text>
+              <Text style={{ color: 'var(--nex-text-muted)' }} size="sm">No users found</Text>
             </Center>
           ) : (
             <Stack gap={4}>
@@ -1376,8 +1374,8 @@ export default function MessagesPage() {
                       {getInitials(user.full_name)}
                     </Avatar>
                     <Stack gap={1} style={{ flex: 1 }}>
-                      <Text fw={600} size="sm" style={{ color: '#e2e8f0' }}>{user.full_name}</Text>
-                      <Text style={{ color: 'rgba(255,255,255,0.35)' }} size="xs">@{user.username}</Text>
+                      <Text fw={600} size="sm" style={{ color: 'var(--nex-text)' }}>{user.full_name}</Text>
+                      <Text style={{ color: 'var(--nex-text-muted)' }} size="xs">@{user.username}</Text>
                     </Stack>
                     {newChatLoading && <Loader size="xs" color="violet" />}
                   </Group>
