@@ -241,6 +241,12 @@ export default function AiVoiceCallModal({ twin, onEnd }: { twin: AiTwin; onEnd:
           0%,100% { opacity: 0.4; transform: scaleY(0.6); }
           50%      { opacity: 1;   transform: scaleY(1.4); }
         }
+        @keyframes nex-scan {
+          0%   { top: -4px; opacity: 0; }
+          10%  { opacity: 1; }
+          90%  { opacity: 1; }
+          100% { top: 116px; opacity: 0; }
+        }
       `}</style>
 
       {/* Top — label + timer */}
@@ -253,49 +259,109 @@ export default function AiVoiceCallModal({ twin, onEnd }: { twin: AiTwin; onEnd:
 
       {/* Avatar + animated rings */}
       <Box style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '8px 0' }}>
+        {/* Outer rings */}
         {[1, 2, 3].map(i => (
           <Box key={i} style={{
             position: 'absolute',
-            width: 110 + i * 56,
-            height: 110 + i * 56,
+            width: 120 + i * 60,
+            height: 120 + i * 60,
             borderRadius: '50%',
             border: `1.5px solid ${RING_COLOR[phase]}`,
             animation: phase === 'processing' ? 'none'
-              : `nex-call-ring ${(phase === 'speaking' ? 0.9 : 1.4) + i * 0.35}s ease-out infinite`,
+              : `nex-call-ring ${(phase === 'speaking' ? 0.85 : 1.3) + i * 0.32}s ease-out infinite`,
             animationDelay: `${i * 0.18}s`,
           }} />
         ))}
 
-        {/* Processing spinner arc */}
+        {/* Rotating circuit ring */}
+        <Box style={{
+          position: 'absolute', width: 148, height: 148, borderRadius: '50%',
+          border: '2px solid transparent',
+          borderTopColor: phase === 'speaking' ? '#7c3aed' : phase === 'listening' ? '#06b6d4' : 'rgba(124,58,237,0.4)',
+          borderRightColor: 'rgba(124,58,237,0.15)',
+          animation: 'nex-call-spin 2.5s linear infinite',
+        }} />
+        <Box style={{
+          position: 'absolute', width: 136, height: 136, borderRadius: '50%',
+          border: '1px dashed rgba(6,182,212,0.25)',
+          animation: 'nex-call-spin 6s linear infinite reverse',
+        }} />
+
+        {/* Processing spinner */}
         {phase === 'processing' && (
           <Box style={{
-            position: 'absolute',
-            width: 130, height: 130,
-            borderRadius: '50%',
-            border: '2px solid transparent',
-            borderTopColor: '#7c3aed',
-            borderRightColor: 'rgba(124,58,237,0.3)',
-            animation: 'nex-call-spin 1s linear infinite',
+            position: 'absolute', width: 148, height: 148, borderRadius: '50%',
+            border: '3px solid transparent',
+            borderTopColor: '#7c3aed', borderRightColor: 'rgba(124,58,237,0.4)',
+            animation: 'nex-call-spin 0.8s linear infinite',
           }} />
         )}
 
-        <Avatar
-          src={twin.avatar_url}
-          size={108}
-          radius="xl"
-          style={{
-            border: `3px solid ${phase === 'speaking' ? '#7c3aed' : phase === 'listening' ? '#06b6d4' : '#2d1060'}`,
-            boxShadow: phase === 'speaking'
-              ? '0 0 40px rgba(124,58,237,0.7), 0 0 80px rgba(124,58,237,0.3)'
-              : phase === 'listening'
-                ? '0 0 30px rgba(6,182,212,0.4)'
-                : '0 0 20px rgba(0,0,0,0.5)',
-            transition: 'all 0.4s ease',
-            zIndex: 1,
-          }}
-        >
-          <IconRobot size={54} color="#7c3aed" />
-        </Avatar>
+        {/* Avatar with holographic overlay */}
+        <Box style={{ position: 'relative', zIndex: 1 }}>
+          {twin.avatar_url ? (
+            <Box style={{ position: 'relative', width: 112, height: 112 }}>
+              <Avatar
+                src={twin.avatar_url}
+                size={112}
+                radius="xl"
+                style={{
+                  border: `3px solid ${phase === 'speaking' ? '#7c3aed' : phase === 'listening' ? '#06b6d4' : '#3d1260'}`,
+                  boxShadow: phase === 'speaking'
+                    ? '0 0 40px rgba(124,58,237,0.8), 0 0 80px rgba(124,58,237,0.35)'
+                    : phase === 'listening'
+                      ? '0 0 30px rgba(6,182,212,0.5)'
+                      : '0 0 20px rgba(0,0,0,0.6)',
+                  transition: 'all 0.4s ease',
+                  filter: 'saturate(0.8) contrast(1.1)',
+                }}
+              />
+              {/* Holographic scan line */}
+              <Box style={{
+                position: 'absolute', inset: 0, borderRadius: 16, overflow: 'hidden',
+                pointerEvents: 'none',
+              }}>
+                <Box style={{
+                  position: 'absolute', left: 0, right: 0, height: 2,
+                  background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.6), transparent)',
+                  animation: 'nex-scan 2.4s ease-in-out infinite',
+                }} />
+                <Box style={{
+                  position: 'absolute', inset: 0,
+                  background: 'linear-gradient(180deg, rgba(124,58,237,0.08) 0%, transparent 50%, rgba(6,182,212,0.08) 100%)',
+                }} />
+              </Box>
+              {/* AI badge */}
+              <Box style={{
+                position: 'absolute', bottom: -4, right: -4,
+                background: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
+                borderRadius: '50%', width: 28, height: 28,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '2px solid #080014',
+                boxShadow: '0 0 12px rgba(124,58,237,0.8)',
+              }}>
+                <IconRobot size={14} color="white" />
+              </Box>
+            </Box>
+          ) : (
+            /* No photo — show animated robot character */
+            <Box style={{
+              width: 112, height: 112, borderRadius: 20,
+              background: 'linear-gradient(135deg, #1a0040, #001a40)',
+              border: `3px solid ${phase === 'speaking' ? '#7c3aed' : phase === 'listening' ? '#06b6d4' : '#3d1260'}`,
+              boxShadow: phase === 'speaking'
+                ? '0 0 40px rgba(124,58,237,0.8)'
+                : '0 0 20px rgba(124,58,237,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexDirection: 'column', gap: 4,
+              transition: 'all 0.4s ease',
+            }}>
+              <IconRobot size={52} color={phase === 'speaking' ? '#a78bfa' : '#7c3aed'}
+                style={{ filter: phase === 'speaking' ? 'drop-shadow(0 0 8px #7c3aed)' : 'none', transition: 'all 0.3s' }} />
+              <Text size="8px" c="violet.4" fw={700} style={{ letterSpacing: 2, textTransform: 'uppercase' }}>AI TWIN</Text>
+            </Box>
+          )}
+        </Box>
       </Box>
 
       {/* Name + status */}
