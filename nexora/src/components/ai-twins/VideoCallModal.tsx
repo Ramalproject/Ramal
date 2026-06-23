@@ -74,6 +74,7 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
   const analyserRef = useRef<AnalyserNode | null>(null)
   const rafRef = useRef<number | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
+  const cancelledRef = useRef(false)
 
   useEffect(() => {
     timerRef.current = setInterval(() => setDuration(d => d + 1), 1000)
@@ -130,13 +131,16 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
   }
 
   const speakText = useCallback(async (text: string, apiKey: string) => {
+    if (cancelledRef.current) return
     const ttsRes = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       body: JSON.stringify({ model: 'tts-1', input: text, voice: 'nova' })
     })
+    if (cancelledRef.current) return
     if (!ttsRes.ok) return
     const blob = await ttsRes.blob()
+    if (cancelledRef.current) return
     const url = URL.createObjectURL(blob)
     const audio = new Audio(url)
     audioRef.current = audio
@@ -149,6 +153,7 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
   }, [])
 
   const sendToAI = useCallback(async (userText: string) => {
+    if (cancelledRef.current) return
     const apiKey = localStorage.getItem(OPENAI_KEY_STORAGE)
     if (!apiKey) return
     showSubtitle(userText, 'user')
@@ -165,15 +170,17 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
           max_tokens: 80, temperature: 0.9,
         })
       })
+      if (cancelledRef.current) { setIsThinking(false); return }
       const chatData = await chatRes.json() as { choices: { message: { content: string } }[] }
+      if (cancelledRef.current) { setIsThinking(false); return }
       const reply = chatData.choices[0]?.message?.content?.trim() ?? 'I heard you!'
       historyRef.current.push({ role: 'assistant', content: reply })
       setIsThinking(false); setIsSpeaking(true)
       showSubtitle(reply, 'assistant')
       await speakText(reply, apiKey)
-      setIsSpeaking(false)
+      if (!cancelledRef.current) setIsSpeaking(false)
     } catch {
-      setIsThinking(false); setIsSpeaking(false)
+      if (!cancelledRef.current) { setIsThinking(false); setIsSpeaking(false) }
     }
   }, [twin, speakText])
 
@@ -185,10 +192,11 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
     const greets = [`Hey! So nice to see you — how are you doing?`, `Hey! You picked up! How's everything going?`, `Oh hey! Great to see you! What's up?`]
     const greeting = greets[Math.floor(Math.random() * greets.length)]
     setTimeout(async () => {
+      if (cancelledRef.current) return
       historyRef.current.push({ role: 'assistant', content: greeting })
       setIsSpeaking(true); showSubtitle(greeting, 'assistant')
       await speakText(greeting, apiKey)
-      setIsSpeaking(false)
+      if (!cancelledRef.current) setIsSpeaking(false)
     }, 900)
   }, [speakText])
 
@@ -233,8 +241,10 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
   function toggleMute() { setIsMuted(m => { streamRef.current?.getAudioTracks().forEach(t => { t.enabled = m }); return !m }) }
   function toggleCamera() { setIsCameraOn(c => { streamRef.current?.getVideoTracks().forEach(t => { t.enabled = !c }); return !c }) }
   function handleEnd() {
+    cancelledRef.current = true
     streamRef.current?.getTracks().forEach(t => t.stop())
-    recognitionRef.current?.stop(); audioRef.current?.pause()
+    recognitionRef.current?.stop()
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
     if (timerRef.current) clearInterval(timerRef.current)
     stopAnalyser(); onEnd()
   }
@@ -254,9 +264,10 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
             <Box style={{
               position: 'absolute', inset: 0,
               animation: isSpeaking
-                ? 'photo-talk 0.55s ease-in-out infinite alternate'
-                : 'photo-idle 4s ease-in-out infinite',
+                ? 'photo-talk 0.85s ease-in-out infinite'
+                : 'photo-idle 7s ease-in-out infinite',
               transformOrigin: 'center 30%',
+              willChange: 'transform',
             }}>
               <img
                 src={avatarUrl}
@@ -463,14 +474,26 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
         @keyframes avatar-idle { 0%,100% { transform: scale(1) translateY(0); } 50% { transform: scale(1.015) translateY(-6px); } }
         @keyframes avatar-talk { from { transform: scale(1) translateY(0) rotate(-0.4deg); } to { transform: scale(1.02) translateY(-5px) rotate(0.4deg); } }
         @keyframes photo-idle {
-          0%   { transform: scale(1.0)  translateY(0px)   rotate(0deg); }
-          25%  { transform: scale(1.02) translateY(-8px)  rotate(0.3deg); }
-          75%  { transform: scale(1.02) translateY(-8px)  rotate(-0.3deg); }
-          100% { transform: scale(1.0)  translateY(0px)   rotate(0deg); }
+          0%   { transform: scale(1.000) translate( 0px,  0px) rotate( 0.00deg); }
+          14%  { transform: scale(1.003) translate( 4px, -5px) rotate( 0.18deg); }
+          28%  { transform: scale(1.005) translate(-3px, -9px) rotate(-0.22deg); }
+          42%  { transform: scale(1.004) translate(-6px, -6px) rotate(-0.15deg); }
+          57%  { transform: scale(1.003) translate( 1px, -8px) rotate( 0.10deg); }
+          71%  { transform: scale(1.005) translate( 5px, -4px) rotate( 0.20deg); }
+          85%  { transform: scale(1.002) translate( 2px, -2px) rotate( 0.08deg); }
+          100% { transform: scale(1.000) translate( 0px,  0px) rotate( 0.00deg); }
         }
         @keyframes photo-talk {
-          from { transform: scale(1.0)  translateY(0px)   rotate(-0.5deg); filter: brightness(0.94); }
-          to   { transform: scale(1.05) translateY(-14px) rotate(0.5deg);  filter: brightness(1.08); }
+          0%   { transform: scale(1.000) translate( 0px,  0px) rotate( 0.00deg); }
+          11%  { transform: scale(1.012) translate( 3px,-10px) rotate( 0.35deg); }
+          22%  { transform: scale(1.006) translate(-3px, -7px) rotate(-0.25deg); }
+          33%  { transform: scale(1.016) translate( 5px,-13px) rotate( 0.48deg); }
+          44%  { transform: scale(1.008) translate(-2px, -9px) rotate(-0.20deg); }
+          55%  { transform: scale(1.014) translate( 4px,-12px) rotate( 0.38deg); }
+          66%  { transform: scale(1.007) translate(-4px, -8px) rotate(-0.30deg); }
+          77%  { transform: scale(1.013) translate( 6px,-11px) rotate( 0.42deg); }
+          88%  { transform: scale(1.005) translate(-1px, -5px) rotate(-0.12deg); }
+          100% { transform: scale(1.000) translate( 0px,  0px) rotate( 0.00deg); }
         }
         @keyframes border-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
         @keyframes listen-pulse { 0%,100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.3); } }

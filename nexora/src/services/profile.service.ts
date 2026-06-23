@@ -1,6 +1,16 @@
 import { supabase } from '../lib/supabase'
 import type { Profile } from '../types'
 
+const FOLLOWS_KEY = 'nexora_follows'
+
+function _getLocalFollows(): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem(FOLLOWS_KEY) ?? '[]')) } catch { return new Set() }
+}
+function _saveLocalFollows(s: Set<string>) {
+  localStorage.setItem(FOLLOWS_KEY, JSON.stringify([...s]))
+}
+function _localFollowKey(a: string, b: string) { return `${a}:${b}` }
+
 export const profileService = {
   async getByUsername(username: string): Promise<Profile | null> {
     const { data, error } = await supabase
@@ -52,9 +62,11 @@ export const profileService = {
   },
 
   async followUser(followerId: string, followingId: string): Promise<void> {
+    // Persist locally first so it survives page reloads even if DB table missing
+    const s = _getLocalFollows(); s.add(_localFollowKey(followerId, followingId)); _saveLocalFollows(s)
     // Try follows table — ignore if it doesn't exist
     await supabase.from('follows').insert({ follower_id: followerId, following_id: followingId }).then(() => {}, () => {})
-    // Direct count update — no RPC needed
+    // Direct count update
     const [{ data: target }, { data: actor }] = await Promise.all([
       supabase.from('profiles').select('followers_count').eq('id', followingId).single(),
       supabase.from('profiles').select('following_count').eq('id', followerId).single(),
@@ -66,6 +78,8 @@ export const profileService = {
   },
 
   async unfollowUser(followerId: string, followingId: string): Promise<void> {
+    // Remove from local store
+    const s = _getLocalFollows(); s.delete(_localFollowKey(followerId, followingId)); _saveLocalFollows(s)
     await supabase.from('follows').delete().match({ follower_id: followerId, following_id: followingId }).then(() => {}, () => {})
     const [{ data: target }, { data: actor }] = await Promise.all([
       supabase.from('profiles').select('followers_count').eq('id', followingId).single(),
@@ -79,15 +93,15 @@ export const profileService = {
 
   async isFollowing(followerId: string, followingId: string): Promise<boolean> {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('follows')
         .select('id')
         .match({ follower_id: followerId, following_id: followingId })
         .single()
-      return !!data
-    } catch {
-      return false
-    }
+      if (!error) return !!data
+    } catch { /* table may not exist */ }
+    // Fallback: check localStorage — works even without the DB table
+    return _getLocalFollows().has(_localFollowKey(followerId, followingId))
   },
 
   async searchProfiles(query: string, limit = 10): Promise<Profile[]> {
