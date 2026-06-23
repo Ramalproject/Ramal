@@ -56,8 +56,9 @@ export function useSendMessage() {
       })
       qc.invalidateQueries({ queryKey: ['rooms'] })
     },
-    onError: () => {
-      notifications.show({ title: 'Send failed', message: 'Could not send message — run the messaging SQL fix in Supabase', color: 'red' })
+    onError: (err: any) => {
+      const detail = err?.message ?? err?.error_description ?? JSON.stringify(err)
+      notifications.show({ title: 'Send failed', message: detail, color: 'red', autoClose: 10000 })
     }
   })
 }
