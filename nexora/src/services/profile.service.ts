@@ -18,14 +18,18 @@ function _getCounts(): CountCache {
 }
 function _saveCounts(c: CountCache) { localStorage.setItem(COUNTS_KEY, JSON.stringify(c)) }
 
-// Merge localStorage counts with DB profile — localStorage wins if higher
+// Merge localStorage counts with DB profile — reads both count cache AND follow relationships
 function _applyLocalCounts(profile: Profile): Profile {
-  const c = _getCounts()[profile.id]
-  if (!c) return profile
+  const follows = _getLocalFollows()
+  const counts = _getCounts()
+  const c = counts[profile.id]
+  // Count known followers/following directly from the follow relationship set
+  const knownFollowers = [...follows].filter(k => k.endsWith(`:${profile.id}`)).length
+  const knownFollowing = [...follows].filter(k => k.startsWith(`${profile.id}:`)).length
   return {
     ...profile,
-    followers_count: Math.max(profile.followers_count, c.followers),
-    following_count: Math.max(profile.following_count, c.following),
+    followers_count: Math.max(profile.followers_count, c?.followers ?? 0, knownFollowers),
+    following_count: Math.max(profile.following_count, c?.following ?? 0, knownFollowing),
   }
 }
 
