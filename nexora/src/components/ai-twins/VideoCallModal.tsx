@@ -248,21 +248,54 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
       {/* ── MAIN AI AREA ── */}
       <Box style={{ position: 'absolute', inset: 0 }}>
         {avatarUrl ? (
-          /* Real photo — fills screen with natural motion */
+          /* Real photo — fills screen with visible motion */
           <>
-            <img
-              src={avatarUrl}
-              alt={twin.name}
-              style={{
-                width: '100%', height: '100%',
-                objectFit: 'cover', objectPosition: 'center top',
-                animation: isSpeaking ? 'photo-talk 0.5s ease-in-out infinite alternate' : 'photo-idle 5s ease-in-out infinite',
-                filter: isSpeaking ? 'brightness(1.06)' : 'brightness(0.93)',
-                transition: 'filter 0.4s ease',
-              }}
-            />
+            {/* Wrapper carries the animation so objectFit centre stays correct */}
+            <Box style={{
+              position: 'absolute', inset: 0,
+              animation: isSpeaking
+                ? 'photo-talk 0.55s ease-in-out infinite alternate'
+                : 'photo-idle 4s ease-in-out infinite',
+              transformOrigin: 'center 30%',
+            }}>
+              <img
+                src={avatarUrl}
+                alt={twin.name}
+                style={{
+                  width: '100%', height: '100%',
+                  objectFit: 'cover',
+                  objectPosition: 'center 25%',   /* show face, not just forehead */
+                  filter: isSpeaking
+                    ? 'brightness(1.08) contrast(1.04)'
+                    : 'brightness(0.94)',
+                  transition: 'filter 0.4s ease',
+                  display: 'block',
+                }}
+              />
+            </Box>
+
+            {/* Green speaking border */}
             {isSpeaking && (
-              <Box style={{ position: 'absolute', inset: 0, pointerEvents: 'none', boxShadow: 'inset 0 0 0 4px rgba(34,197,94,0.6)', animation: 'border-pulse 0.9s ease-in-out infinite' }} />
+              <Box style={{
+                position: 'absolute', inset: 0, pointerEvents: 'none',
+                boxShadow: 'inset 0 0 0 5px rgba(34,197,94,0.75)',
+                animation: 'border-pulse 0.7s ease-in-out infinite',
+              }} />
+            )}
+
+            {/* Audio bars overlaid at bottom of photo when speaking */}
+            {(isSpeaking || isThinking) && (
+              <Box style={{
+                position: 'absolute', bottom: 120, left: '50%', transform: 'translateX(-50%)',
+                display: 'flex', alignItems: 'center', gap: 3, zIndex: 5,
+                background: 'rgba(0,0,0,0.35)', borderRadius: 20, padding: '6px 14px',
+                backdropFilter: 'blur(8px)',
+              }}>
+                {isThinking
+                  ? <ThinkingDots />
+                  : <AudioRing bars={audioBars} />
+                }
+              </Box>
             )}
           </>
         ) : (
@@ -429,8 +462,16 @@ export default function VideoCallModal({ twin, onEnd }: Props) {
       <style>{`
         @keyframes avatar-idle { 0%,100% { transform: scale(1) translateY(0); } 50% { transform: scale(1.015) translateY(-6px); } }
         @keyframes avatar-talk { from { transform: scale(1) translateY(0) rotate(-0.4deg); } to { transform: scale(1.02) translateY(-5px) rotate(0.4deg); } }
-        @keyframes photo-idle { 0%,100% { transform: scale(1.0) translateY(0); } 50% { transform: scale(1.012) translateY(-5px); } }
-        @keyframes photo-talk { from { transform: scale(1.0) translateY(0) rotate(-0.2deg); } to { transform: scale(1.016) translateY(-5px) rotate(0.2deg); } }
+        @keyframes photo-idle {
+          0%   { transform: scale(1.0)  translateY(0px)   rotate(0deg); }
+          25%  { transform: scale(1.02) translateY(-8px)  rotate(0.3deg); }
+          75%  { transform: scale(1.02) translateY(-8px)  rotate(-0.3deg); }
+          100% { transform: scale(1.0)  translateY(0px)   rotate(0deg); }
+        }
+        @keyframes photo-talk {
+          from { transform: scale(1.0)  translateY(0px)   rotate(-0.5deg); filter: brightness(0.94); }
+          to   { transform: scale(1.05) translateY(-14px) rotate(0.5deg);  filter: brightness(1.08); }
+        }
         @keyframes border-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
         @keyframes listen-pulse { 0%,100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.3); } }
         @keyframes dot-bounce { 0%,80%,100% { transform: scale(0.65); opacity: 0.35; } 40% { transform: scale(1.1); opacity: 1; } }
