@@ -1,5 +1,5 @@
 import { Box, Paper, Avatar, Text, Badge, Button, Group, Stack, TextInput, ActionIcon, ScrollArea, Loader, Tooltip, FileButton } from '@mantine/core'
-import { IconRobot, IconSend, IconVideo, IconArrowLeft, IconCamera, IconPhone, IconSparkles } from '@tabler/icons-react'
+import { IconRobot, IconSend, IconVideo, IconArrowLeft, IconCamera, IconSparkles } from '@tabler/icons-react'
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -8,7 +8,6 @@ import { supabase } from '../../lib/supabase'
 import { formatNumber } from '../../utils'
 import type { AiTwin } from '../../types'
 import VideoCallModal from '../../components/ai-twins/VideoCallModal'
-import AiVoiceCallModal from '../../components/ai-twins/AiVoiceCallModal'
 import { FEATURED_CHARACTERS } from '../../data/featuredCharacters'
 
 interface ChatMessage { role: 'user' | 'assistant'; content: string }
@@ -44,7 +43,6 @@ export default function TwinDetailPage() {
   const [input, setInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const [videoCallOpen, setVideoCallOpen] = useState(false)
-  const [voiceCallOpen, setVoiceCallOpen] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
 
   const isFeatured = (id ?? '').startsWith('featured-')
@@ -198,19 +196,11 @@ export default function TwinDetailPage() {
             <Text c="dimmed" size="xs">{formatNumber(twin.chats_count)} chats</Text>
             <Button
               size="sm"
-              leftSection={<IconPhone size={14} />}
-              style={{ background: 'linear-gradient(135deg, #059669, #047857)' }}
-              onClick={() => setVoiceCallOpen(true)}
-            >
-              AI Call
-            </Button>
-            <Button
-              size="sm"
               leftSection={<IconVideo size={14} />}
               style={{ background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' }}
               onClick={() => setVideoCallOpen(true)}
             >
-              Video
+              Video Call
             </Button>
           </Group>
         </Group>
@@ -269,7 +259,6 @@ export default function TwinDetailPage() {
       </ScrollArea>
 
       {videoCallOpen && <VideoCallModal twin={{ ...twin, avatar_url: displayAvatar }} onEnd={() => setVideoCallOpen(false)} />}
-      {voiceCallOpen && <AiVoiceCallModal twin={{ ...twin, avatar_url: displayAvatar }} onEnd={() => setVoiceCallOpen(false)} />}
 
       {/* Input */}
       <Box p="md" style={{ background: 'var(--nex-surface)', borderTop: '1px solid var(--nex-border)', flexShrink: 0 }}>
