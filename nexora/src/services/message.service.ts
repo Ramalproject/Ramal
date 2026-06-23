@@ -67,19 +67,19 @@ export const messageService = {
     })
     if (existing) return existing as string
 
-    const { data: room, error } = await supabase
+    // Generate ID client-side — avoids RLS blocking select() before participants are inserted
+    const roomId = crypto.randomUUID()
+    const { error } = await supabase
       .from('message_rooms')
-      .insert({ updated_at: new Date().toISOString() })
-      .select()
-      .single()
+      .insert({ id: roomId, updated_at: new Date().toISOString() })
     if (error) throw error
 
     await supabase.from('room_participants').insert([
-      { room_id: room.id, user_id: userId1, last_read_at: new Date().toISOString() },
-      { room_id: room.id, user_id: userId2, last_read_at: new Date(0).toISOString() }
+      { room_id: roomId, user_id: userId1, last_read_at: new Date().toISOString() },
+      { room_id: roomId, user_id: userId2, last_read_at: new Date(0).toISOString() }
     ])
 
-    return room.id
+    return roomId
   },
 
   async getMessages(roomId: string, page = 0, limit = 50): Promise<Message[]> {
