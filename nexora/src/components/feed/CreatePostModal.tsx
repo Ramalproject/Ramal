@@ -149,11 +149,11 @@ export default function CreatePostModal({ opened, onClose }: Props) {
 
   const detectGPS = useCallback(async () => {
     setDetectingLocation(true)
+    setLocationOpen(false)  // close popover immediately on click
 
-    // Try browser GPS first (requires HTTPS)
     const tryGPS = (): Promise<{ lat: number; lon: number } | null> =>
       new Promise(resolve => {
-        if (!navigator.geolocation || location.protocol !== 'https:') {
+        if (!navigator.geolocation || window.location.protocol !== 'https:') {
           resolve(null); return
         }
         navigator.geolocation.getCurrentPosition(
@@ -178,24 +178,17 @@ export default function CreatePostModal({ opened, onClose }: Props) {
     try {
       const gps = await tryGPS()
       if (gps) {
-        const place = await reverseGeocode(gps.lat, gps.lon)
-        setLocationText(place)
-        setLocationOpen(false)
+        setLocationText(await reverseGeocode(gps.lat, gps.lon))
         return
       }
-
-      // Fallback: IP-based location (works on HTTP, no permission needed)
+      // Fallback: IP-based (works on HTTP, no permission needed)
       const res = await fetch('https://ipapi.co/json/')
       const json = await res.json()
       const city = json.city ?? ''
       const country = json.country_name ?? ''
       const place = [city, country].filter(Boolean).join(', ')
-      if (place) {
-        setLocationText(place)
-        setLocationOpen(false)
-      } else {
-        notifications.show({ title: 'Could not detect location', message: 'Please type your location manually', color: 'orange' })
-      }
+      setLocationText(place || '')
+      if (!place) notifications.show({ title: 'Could not detect location', message: 'Please type your location manually', color: 'orange' })
     } catch {
       notifications.show({ title: 'Could not detect location', message: 'Please type your location manually', color: 'orange' })
     } finally {
