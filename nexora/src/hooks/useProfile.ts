@@ -101,7 +101,7 @@ export function useSearchProfiles(query: string) {
   return useQuery({
     queryKey: ['profiles', 'search', query],
     queryFn: () => profileService.searchProfiles(query),
-    enabled: query.length >= 2,
+    enabled: query.length >= 1,
     staleTime: 1000 * 30,
   })
 }

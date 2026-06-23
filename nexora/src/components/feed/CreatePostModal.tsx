@@ -1,7 +1,7 @@
 import {
   Modal, Textarea, Button, Stack, Group, Avatar, Text, Box,
   Switch, SegmentedControl, Slider, Badge, ActionIcon, Divider,
-  Paper, Tooltip, Menu, Popover, TextInput, ScrollArea,
+  Paper, Tooltip, Menu, Popover, TextInput, ScrollArea, UnstyledButton,
 } from '@mantine/core'
 import {
   IconPhoto, IconMoodSmile, IconMapPin, IconUsers,
@@ -175,16 +175,16 @@ export default function CreatePostModal({ opened, onClose }: Props) {
             </Avatar>
             <Box>
               <Text fw={700} c="white" size="sm">{profile?.full_name ?? user?.email?.split('@')[0]}</Text>
-              {/* ── Visibility dropdown (proper Menu) ── */}
-              <Menu shadow="md" width={180} withinPortal zIndex={1001}>
+              {/* ── Visibility dropdown ── */}
+              <Menu shadow="md" width={180} withinPortal zIndex={1002}>
                 <Menu.Target>
-                  <Box style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+                  <UnstyledButton style={{ display: 'inline-flex', alignItems: 'center', gap: 4,
                     background: 'rgba(124,58,237,0.15)', borderRadius: 20, padding: '2px 8px',
-                    border: '1px solid rgba(124,58,237,0.3)' }}>
+                    border: '1px solid rgba(124,58,237,0.3)', cursor: 'pointer' }}>
                     <VisIcon size={11} color="#7c3aed" />
                     <Text size="xs" c="violet" fw={500} style={{ textTransform: 'capitalize' }}>{visibility === 'connections' ? 'Connections' : visibility}</Text>
                     <IconChevronDown size={10} color="#7c3aed" />
-                  </Box>
+                  </UnstyledButton>
                 </Menu.Target>
                 <Menu.Dropdown style={{ background: '#141428', border: '1px solid #2d2d4e' }}>
                   <Menu.Item leftSection={<IconWorld size={14} color="#22c55e" />} onClick={() => setVisibility('public')}
@@ -297,7 +297,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                   <Popover.Target>
                     <Tooltip label="Feeling" withArrow>
                       <ActionIcon variant="subtle" radius="xl" size={34} style={{ color: '#f59e0b' }}
-                        onClick={() => setFeelingOpen(o => !o)}>
+                        onClick={() => { setLocationOpen(false); setTagOpen(false); setFeelingOpen(o => !o) }}>
                         <IconMoodSmile size={18} />
                       </ActionIcon>
                     </Tooltip>
@@ -325,7 +325,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                   <Popover.Target>
                     <Tooltip label="Location" withArrow>
                       <ActionIcon variant="subtle" radius="xl" size={34} style={{ color: '#ef4444' }}
-                        onClick={() => setLocationOpen(o => !o)}>
+                        onClick={() => { setFeelingOpen(false); setTagOpen(false); setLocationOpen(o => !o) }}>
                         <IconMapPin size={18} />
                       </ActionIcon>
                     </Tooltip>
@@ -356,7 +356,7 @@ export default function CreatePostModal({ opened, onClose }: Props) {
                   <Popover.Target>
                     <Tooltip label="Tag People" withArrow>
                       <ActionIcon variant="subtle" radius="xl" size={34} style={{ color: '#06b6d4' }}
-                        onClick={() => setTagOpen(o => !o)}>
+                        onClick={() => { setFeelingOpen(false); setLocationOpen(false); setTagOpen(o => !o) }}>
                         <IconUsers size={18} />
                       </ActionIcon>
                     </Tooltip>

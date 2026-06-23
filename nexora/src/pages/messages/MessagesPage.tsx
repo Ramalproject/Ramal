@@ -740,12 +740,12 @@ export default function MessagesPage() {
             placeholder="Search people..."
             leftSection={<IconSearch size={14} />}
             value={newChatQuery}
-            onChange={e => setNewChatQuery(e.target.value)}
+            onChange={e => setNewChatQuery(e.target.value.replace(/^@+/, ''))}
             autoFocus
             styles={{ input: { background: '#1a1a2e', border: '1px solid #2d2d4e', color: 'white' } }}
             mb="sm"
           />
-          {newChatQuery.length < 2 ? (
+          {newChatQuery.length < 1 ? (
             <Text c="dimmed" size="sm" ta="center" py="md">Type a name to search</Text>
           ) : newChatResults.length === 0 ? (
             <Text c="dimmed" size="sm" ta="center" py="md">No users found</Text>
