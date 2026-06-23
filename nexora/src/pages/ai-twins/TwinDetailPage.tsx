@@ -1,5 +1,5 @@
 import { Box, Paper, Avatar, Text, Badge, Button, Group, Stack, TextInput, ActionIcon, ScrollArea, Loader, Tooltip } from '@mantine/core'
-import { IconRobot, IconSend, IconVideo, IconArrowLeft, IconCamera } from '@tabler/icons-react'
+import { IconRobot, IconSend, IconVideo, IconArrowLeft, IconCamera, IconPhone } from '@tabler/icons-react'
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { formatNumber } from '../../utils'
 import type { AiTwin } from '../../types'
 import VideoCallModal from '../../components/ai-twins/VideoCallModal'
+import AiVoiceCallModal from '../../components/ai-twins/AiVoiceCallModal'
 
 interface ChatMessage { role: 'user' | 'assistant'; content: string }
 
@@ -39,6 +40,7 @@ export default function TwinDetailPage() {
   const [input, setInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const [videoCallOpen, setVideoCallOpen] = useState(false)
+  const [voiceCallOpen, setVoiceCallOpen] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
@@ -175,11 +177,19 @@ export default function TwinDetailPage() {
             <Text c="dimmed" size="xs">{formatNumber(twin.chats_count)} chats</Text>
             <Button
               size="sm"
+              leftSection={<IconPhone size={14} />}
+              style={{ background: 'linear-gradient(135deg, #059669, #047857)' }}
+              onClick={() => setVoiceCallOpen(true)}
+            >
+              AI Call
+            </Button>
+            <Button
+              size="sm"
               leftSection={<IconVideo size={14} />}
               style={{ background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' }}
               onClick={() => setVideoCallOpen(true)}
             >
-              Video Call
+              Video
             </Button>
           </Group>
         </Group>
@@ -238,6 +248,7 @@ export default function TwinDetailPage() {
       </ScrollArea>
 
       {videoCallOpen && <VideoCallModal twin={twin} onEnd={() => setVideoCallOpen(false)} />}
+      {voiceCallOpen && <AiVoiceCallModal twin={twin} onEnd={() => setVoiceCallOpen(false)} />}
 
       {/* Input */}
       <Box p="md" style={{ background: 'var(--nex-surface)', borderTop: '1px solid var(--nex-border)', flexShrink: 0 }}>
@@ -249,7 +260,7 @@ export default function TwinDetailPage() {
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
             disabled={chatLoading}
-            styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' } }}
+            styles={{ input: { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)' } }}
           />
           <ActionIcon
             size="lg"

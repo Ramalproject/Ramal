@@ -3,38 +3,60 @@ import type { Message, Room, Profile } from '../types'
 
 export const messageService = {
   async getRooms(userId: string): Promise<Room[]> {
-    const { data: participantRows } = await supabase
+    // Step 1: rooms this user is in
+    const { data: myRows } = await supabase
       .from('room_participants')
       .select('room_id, last_read_at')
       .eq('user_id', userId)
 
-    if (!participantRows?.length) return []
+    if (!myRows?.length) return []
+    const roomIds = myRows.map(p => p.room_id)
 
-    const roomIds = participantRows.map(p => p.room_id)
+    // Step 2: all participants in those rooms (other than self)
+    const { data: otherRows } = await supabase
+      .from('room_participants')
+      .select('room_id, user_id')
+      .in('room_id', roomIds)
+      .neq('user_id', userId)
 
+    // Step 3: profiles for those participants
+    const otherIds = [...new Set((otherRows ?? []).map(r => r.user_id))]
+    const { data: profileRows } = await supabase
+      .from('profiles')
+      .select('id, full_name, username, avatar_url, plan')
+      .in('id', otherIds)
+
+    const profileMap: Record<string, Profile> = Object.fromEntries(
+      (profileRows ?? []).map(p => [p.id, p as Profile])
+    )
+
+    // Step 4: room timestamps
     const { data: rooms } = await supabase
       .from('message_rooms')
-      .select(`
-        id, created_at, updated_at,
-        room_participants!inner(user_id, last_read_at, profiles!inner(*))
-      `)
+      .select('id, created_at, updated_at')
       .in('id', roomIds)
       .order('updated_at', { ascending: false })
 
     if (!rooms) return []
 
-    const enrichedRooms = await Promise.all(rooms.map(async (room) => {
+    // Step 5: enrich each room
+    const enriched = await Promise.all(rooms.map(async room => {
+      const myRow = myRows.find(r => r.room_id === room.id)
+      const lastReadAt = myRow?.last_read_at ?? new Date(0).toISOString()
+
+      const participants = (otherRows ?? [])
+        .filter(r => r.room_id === room.id)
+        .map(r => profileMap[r.user_id])
+        .filter(Boolean) as Profile[]
+
       const { data: lastMsg } = await supabase
         .from('messages')
-        .select(`*, sender:profiles!sender_id(*)`)
+        .select('*, sender:profiles!sender_id(*)')
         .eq('room_id', room.id)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
-
-      const userParticipant = participantRows.find(p => p.room_id === room.id)
-      const lastReadAt = userParticipant?.last_read_at ?? new Date(0).toISOString()
 
       const { count: unread } = await supabase
         .from('messages')
@@ -43,10 +65,6 @@ export const messageService = {
         .neq('sender_id', userId)
         .gt('created_at', lastReadAt)
         .eq('is_deleted', false)
-
-      const participants = (room as any).room_participants
-        ?.map((rp: any) => rp.profiles)
-        .filter((p: any) => p && p.id !== userId) as Profile[]
 
       return {
         id: room.id,
@@ -58,7 +76,7 @@ export const messageService = {
       } as Room
     }))
 
-    return enrichedRooms
+    return enriched
   },
 
   async getOrCreateRoom(userId1: string, userId2: string): Promise<string> {
