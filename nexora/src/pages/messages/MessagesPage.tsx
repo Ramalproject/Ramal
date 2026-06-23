@@ -9,10 +9,12 @@ import {
 } from '@tabler/icons-react'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import { useRooms, useMessages, useRealtimeMessages, useSendMessage, useDeleteMessage, usePinMessage, useAddReaction, useMarkRead } from '../../hooks/useMessages'
 import { useSearchProfiles, useProfile } from '../../hooks/useProfile'
 import { useAuthStore } from '../../store/useAuthStore'
+import { supabase } from '../../lib/supabase'
 import { getInitials, timeAgo, truncate } from '../../utils'
 import { messageService } from '../../services/message.service'
 import type { Message, Room, Profile } from '../../types'
@@ -223,7 +225,7 @@ function MessageBubble({ msg, isMine, roomId, onReply }: BubbleProps) {
 // ─── Room List Item ───────────────────────────────────────────────────────────
 function RoomItem({ room, isActive, myId, onClick }: { room: Room; isActive: boolean; myId: string; onClick: () => void }) {
   const other = getOtherParticipant(room, myId)
-  const displayName = other?.full_name ?? 'Unknown'
+  const displayName = other?.full_name || other?.username || 'Unknown'
   const lastMsg = room.last_message
 
   return (
@@ -312,6 +314,31 @@ export default function MessagesPage() {
   const { data: withProfile } = useProfile(withUserId)
   const { data: messages = [], isLoading: msgsLoading } = useMessages(activeRoomId ?? '')
   useRealtimeMessages(activeRoomId ?? '')
+
+  // When the rooms list is empty (getRooms RLS issue) but we have an active room,
+  // fetch the other participant directly so the header doesn't show "Unknown"
+  const activeRoom = rooms.find(r => r.id === activeRoomId)
+  const { data: directOtherUser } = useQuery({
+    queryKey: ['room-other-user', activeRoomId, authUser?.id],
+    queryFn: async () => {
+      const { data: part } = await supabase
+        .from('room_participants')
+        .select('user_id')
+        .eq('room_id', activeRoomId!)
+        .neq('user_id', authUser!.id)
+        .limit(1)
+        .maybeSingle()
+      if (!part) return null
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url')
+        .eq('id', part.user_id)
+        .single()
+      return prof as Profile | null
+    },
+    enabled: !!activeRoomId && !!authUser?.id && !activeRoom,
+    staleTime: 1000 * 60 * 5,
+  })
   const sendMessage = useSendMessage()
   const markRead = useMarkRead()
 
@@ -440,13 +467,21 @@ export default function MessagesPage() {
     setSearchResults(results)
   }
 
-  const activeRoom = rooms.find(r => r.id === activeRoomId)
+  // Derive other user: from rooms list → direct DB fetch → messages sender → ?with= param
+  const otherUserFromMsg = messages.find(m => m.sender_id !== authUser?.id)?.sender as Profile | undefined
   const otherUser = activeRoom
     ? getOtherParticipant(activeRoom, authUser?.id ?? '')
-    : (withProfile ?? undefined)
-  const filteredRooms = rooms.filter(r => {
+    : directOtherUser ?? otherUserFromMsg ?? (withProfile ?? undefined)
+  const baseRooms: Room[] = rooms.length > 0
+    ? rooms
+    : (activeRoomId && otherUser
+      ? [{ id: activeRoomId, participants: [otherUser], last_message: messages[messages.length - 1], unread_count: 0, created_at: '', updated_at: '' } as Room]
+      : [])
+
+  const filteredRooms = baseRooms.filter(r => {
     const other = getOtherParticipant(r, authUser?.id ?? '')
-    return !roomSearch || other?.full_name?.toLowerCase().includes(roomSearch.toLowerCase())
+    const name = other?.full_name || other?.username || ''
+    return !roomSearch || name.toLowerCase().includes(roomSearch.toLowerCase())
   })
 
   // Group messages by date
@@ -532,7 +567,7 @@ export default function MessagesPage() {
                   }} />
                 </Box>
                 <Stack gap={0}>
-                  <Text fw={600}>{otherUser?.full_name ?? 'Unknown'}</Text>
+                  <Text fw={600}>{otherUser?.full_name || otherUser?.username || 'Unknown'}</Text>
                   <Text size="xs" c="green">Online</Text>
                 </Stack>
               </Group>
@@ -592,7 +627,7 @@ export default function MessagesPage() {
                   <Avatar src={otherUser?.avatar_url} radius="xl" size={60}>
                     {otherUser?.full_name ? getInitials(otherUser.full_name) : '?'}
                   </Avatar>
-                  <Text fw={600}>{otherUser?.full_name}</Text>
+                  <Text fw={600}>{otherUser?.full_name || otherUser?.username || 'Say hello!'}</Text>
                   <Text c="dimmed" size="sm">Say hello! 👋</Text>
                 </Stack>
               </Center>
