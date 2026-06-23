@@ -1,14 +1,79 @@
-import { Box, Group, Text, Avatar, Badge, Button, Tabs, Stack, Skeleton, Paper, Tooltip } from '@mantine/core'
-import { IconMapPin, IconLink, IconUserCheck, IconUserPlus, IconMessage, IconLock } from '@tabler/icons-react'
+import { Box, Group, Text, Avatar, Badge, Button, Tabs, Stack, Skeleton, Paper, Tooltip, Modal, Code, ScrollArea, CopyButton } from '@mantine/core'
+import { IconMapPin, IconLink, IconUserCheck, IconUserPlus, IconMessage, IconLock, IconCopy, IconCheck } from '@tabler/icons-react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useProfileByUsername, useIsFollowing, useFollowUser, useUnfollowUser } from '../../hooks/useProfile'
 import { useUserPosts } from '../../hooks/usePosts'
 import { useAuthStore } from '../../store/useAuthStore'
-import { notifications } from '@mantine/notifications'
 import { formatNumber, getInitials, getPlanColor, getPlanLabel } from '../../utils'
 import { messageService } from '../../services/message.service'
 import PostCard from '../../components/feed/PostCard'
+
+const MESSAGING_SQL = `-- Run this in Supabase → SQL Editor → New query
+
+DROP POLICY IF EXISTS "participants can see their rooms" ON message_rooms;
+DROP POLICY IF EXISTS "participants can insert rooms" ON message_rooms;
+DROP POLICY IF EXISTS "participants can update rooms" ON message_rooms;
+DROP POLICY IF EXISTS "users can see participants in their rooms" ON room_participants;
+DROP POLICY IF EXISTS "users can join rooms" ON room_participants;
+DROP POLICY IF EXISTS "users can update own participant row" ON room_participants;
+DROP POLICY IF EXISTS "participants can see messages" ON messages;
+DROP POLICY IF EXISTS "participants can send messages" ON messages;
+DROP POLICY IF EXISTS "sender can edit their message" ON messages;
+DROP POLICY IF EXISTS "participants can see reactions" ON message_reactions;
+DROP POLICY IF EXISTS "users can manage own reactions" ON message_reactions;
+
+CREATE TABLE IF NOT EXISTS message_rooms (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS room_participants (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_id uuid REFERENCES message_rooms(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  last_read_at timestamptz DEFAULT now(),
+  UNIQUE(room_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_id uuid REFERENCES message_rooms(id) ON DELETE CASCADE,
+  sender_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  content text NOT NULL DEFAULT '',
+  message_type text NOT NULL DEFAULT 'text',
+  attachment_url text, attachment_name text, attachment_type text,
+  duration int, reply_to_id uuid REFERENCES messages(id) ON DELETE SET NULL,
+  is_deleted boolean DEFAULT false, deleted_at timestamptz, pinned_at timestamptz,
+  created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS message_reactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  message_id uuid REFERENCES messages(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  emoji text NOT NULL, created_at timestamptz DEFAULT now(),
+  UNIQUE(message_id, user_id)
+);
+CREATE OR REPLACE FUNCTION get_dm_room(user1 uuid, user2 uuid)
+RETURNS uuid LANGUAGE sql SECURITY DEFINER AS $$
+  SELECT r.id FROM message_rooms r
+  WHERE (SELECT COUNT(*) FROM room_participants p WHERE p.room_id = r.id AND p.user_id IN (user1, user2)) = 2
+  LIMIT 1;
+$$;
+ALTER TABLE message_rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE room_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE message_reactions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "participants can see their rooms" ON message_rooms FOR SELECT USING (EXISTS (SELECT 1 FROM room_participants WHERE room_id = id AND user_id = auth.uid()));
+CREATE POLICY "participants can insert rooms" ON message_rooms FOR INSERT WITH CHECK (true);
+CREATE POLICY "participants can update rooms" ON message_rooms FOR UPDATE USING (EXISTS (SELECT 1 FROM room_participants WHERE room_id = id AND user_id = auth.uid()));
+CREATE POLICY "users can see participants in their rooms" ON room_participants FOR SELECT USING (user_id = auth.uid() OR EXISTS (SELECT 1 FROM room_participants rp WHERE rp.room_id = room_id AND rp.user_id = auth.uid()));
+CREATE POLICY "users can join rooms" ON room_participants FOR INSERT WITH CHECK (true);
+CREATE POLICY "users can update own participant row" ON room_participants FOR UPDATE USING (user_id = auth.uid());
+CREATE POLICY "participants can see messages" ON messages FOR SELECT USING (EXISTS (SELECT 1 FROM room_participants WHERE room_id = messages.room_id AND user_id = auth.uid()));
+CREATE POLICY "participants can send messages" ON messages FOR INSERT WITH CHECK (sender_id = auth.uid() AND EXISTS (SELECT 1 FROM room_participants WHERE room_id = messages.room_id AND user_id = auth.uid()));
+CREATE POLICY "sender can edit their message" ON messages FOR UPDATE USING (sender_id = auth.uid());
+CREATE POLICY "participants can see reactions" ON message_reactions FOR SELECT USING (EXISTS (SELECT 1 FROM messages m JOIN room_participants rp ON rp.room_id = m.room_id WHERE m.id = message_id AND rp.user_id = auth.uid()));
+CREATE POLICY "users can manage own reactions" ON message_reactions FOR ALL USING (user_id = auth.uid());`
 
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>()
@@ -21,21 +86,68 @@ export default function ProfilePage() {
   const followUser = useFollowUser()
   const unfollowUser = useUnfollowUser()
   const [activeTab, setActiveTab] = useState<string | null>('posts')
+  const [setupOpen, setSetupOpen] = useState(false)
 
   if (isLoading) return <Box p="xl"><Skeleton height={300} radius="md" /></Box>
   if (!profile) return <Box p="xl"><Text c="dimmed">Profile not found.</Text></Box>
 
   function handleFollowToggle() {
     if (!profile) return
-    if (isFollowing) {
-      unfollowUser.mutate({ followingId: profile.id })
-    } else {
-      followUser.mutate({ followingId: profile.id })
-    }
+    if (isFollowing) unfollowUser.mutate({ followingId: profile.id })
+    else followUser.mutate({ followingId: profile.id })
   }
 
   return (
     <Box>
+      {/* Messaging Setup Modal */}
+      <Modal
+        opened={setupOpen}
+        onClose={() => setSetupOpen(false)}
+        title={<Text fw={700} c="white" size="lg">⚙️ Messaging Setup Required</Text>}
+        size="xl" centered
+        styles={{
+          header: { background: '#0f0f1a', borderBottom: '1px solid #1e1e3a' },
+          body: { background: '#0f0f1a' },
+          content: { background: '#0f0f1a' },
+        }}
+      >
+        <Stack gap="md">
+          <Text c="gray.4" size="sm">
+            The messaging tables don't exist in your Supabase database yet. Follow these steps:
+          </Text>
+          <Stack gap={6}>
+            <Text c="white" size="sm" fw={600}>1. Open your Supabase project dashboard</Text>
+            <Text c="white" size="sm" fw={600}>2. Click <Text span c="violet" fw={700}>SQL Editor</Text> in the left menu</Text>
+            <Text c="white" size="sm" fw={600}>3. Click <Text span c="violet" fw={700}>+ New query</Text></Text>
+            <Text c="white" size="sm" fw={600}>4. Copy the SQL below and paste it</Text>
+            <Text c="white" size="sm" fw={600}>5. Click the green <Text span c="green" fw={700}>Run</Text> button</Text>
+          </Stack>
+          <Box style={{ position: 'relative' }}>
+            <CopyButton value={MESSAGING_SQL}>
+              {({ copied, copy }) => (
+                <Button
+                  size="xs"
+                  leftSection={copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
+                  color={copied ? 'green' : 'violet'}
+                  onClick={copy}
+                  style={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}
+                >
+                  {copied ? 'Copied!' : 'Copy SQL'}
+                </Button>
+              )}
+            </CopyButton>
+            <ScrollArea h={300}>
+              <Code block style={{ background: '#0a0a14', color: '#a78bfa', fontSize: 11, display: 'block', padding: 12, whiteSpace: 'pre' }}>
+                {MESSAGING_SQL}
+              </Code>
+            </ScrollArea>
+          </Box>
+          <Button fullWidth color="violet" onClick={() => setSetupOpen(false)}>
+            I've run the SQL — close this
+          </Button>
+        </Stack>
+      </Modal>
+
       <Box style={{
         height: 200,
         background: profile.cover_url
@@ -103,7 +215,7 @@ export default function ProfilePage() {
                       const roomId = await messageService.getOrCreateRoom(authUser.id, profile.id)
                       navigate(`/messages/${roomId}`)
                     } catch {
-                      notifications.show({ message: 'Could not open messages', color: 'red' })
+                      setSetupOpen(true)
                     }
                   }}
                 >
@@ -126,10 +238,7 @@ export default function ProfilePage() {
           {profile.website && (
             <Group gap={4}>
               <IconLink size={14} color="#06b6d4" />
-              <Text
-                c="cyan" size="sm" component="a"
-                href={profile.website} target="_blank" rel="noreferrer"
-              >
+              <Text c="cyan" size="sm" component="a" href={profile.website} target="_blank" rel="noreferrer">
                 {profile.website.replace(/^https?:\/\//, '')}
               </Text>
             </Group>
