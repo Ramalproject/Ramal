@@ -10,7 +10,7 @@ export function useRooms() {
     queryKey: ['rooms', authUser?.id],
     queryFn: () => messageService.getRooms(authUser!.id),
     enabled: !!authUser?.id,
-    staleTime: 1000 * 30,
+    staleTime: 0,
   })
 }
 

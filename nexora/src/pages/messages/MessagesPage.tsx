@@ -495,13 +495,17 @@ export default function MessagesPage() {
       </Box>
 
       {/* ── Right: Chat Window ───────────────────────────────────── */}
-      {!activeRoomId || !activeRoom ? (
+      {!activeRoomId ? (
         <Center style={{ flex: 1 }}>
           <Stack align="center" gap="md">
             <Text style={{ fontSize: 48 }}>💬</Text>
             <Text fw={700} c="white" size="xl">NEXORA Messages</Text>
             <Text c="dimmed">Select a conversation to start messaging</Text>
           </Stack>
+        </Center>
+      ) : roomsLoading || !activeRoom ? (
+        <Center style={{ flex: 1 }}>
+          <Loader color="violet" />
         </Center>
       ) : (
         <Box style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
