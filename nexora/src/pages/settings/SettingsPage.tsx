@@ -85,8 +85,11 @@ BEGIN
 END;
 $$;
 
--- Enable realtime on room_participants so receivers get instant sidebar updates
-ALTER PUBLICATION supabase_realtime ADD TABLE room_participants;`
+-- Enable realtime on room_participants (safe to run even if already enabled)
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE room_participants;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;`
 
 export default function SettingsPage() {
   const { profile, user, setProfile } = useAuthStore()
