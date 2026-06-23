@@ -7,6 +7,7 @@ import { notifications } from '@mantine/notifications'
 import { supabase } from '../../lib/supabase'
 import { formatNumber } from '../../utils'
 import type { AiTwin } from '../../types'
+import VideoCallModal from '../../components/ai-twins/VideoCallModal'
 
 interface ChatMessage { role: 'user' | 'assistant'; content: string }
 
@@ -34,6 +35,7 @@ export default function TwinDetailPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
+  const [videoCallOpen, setVideoCallOpen] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -119,6 +121,7 @@ export default function TwinDetailPage() {
               size="sm"
               leftSection={<IconVideo size={14} />}
               style={{ background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' }}
+              onClick={() => setVideoCallOpen(true)}
             >
               Video Call
             </Button>
@@ -177,6 +180,8 @@ export default function TwinDetailPage() {
         </Stack>
         <div ref={endRef} />
       </ScrollArea>
+
+      {videoCallOpen && <VideoCallModal twin={twin} onEnd={() => setVideoCallOpen(false)} />}
 
       {/* Input */}
       <Box p="md" style={{ background: '#0d0d1a', borderTop: '1px solid #1e1e3a', flexShrink: 0 }}>
