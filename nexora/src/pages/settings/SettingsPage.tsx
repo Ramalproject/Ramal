@@ -11,64 +11,55 @@ const OPENAI_KEY_STORAGE = 'nexora_openai_api_key'
 const inputStyle = { background: 'var(--nex-input)', border: '1px solid var(--nex-subtle)', color: 'white' as const }
 const labelStyle = { color: '#8892b0' as const }
 
-const FIX_MESSAGING_SQL = `-- FULL RESET — drops old tables & policies, rebuilds clean
+const FIX_MESSAGING_SQL = `-- FIX RLS POLICIES ONLY — does NOT delete any data or messages
 -- Run this ONCE in Supabase → SQL Editor → New query → Run
 
-DROP TABLE IF EXISTS message_reactions CASCADE;
-DROP TABLE IF EXISTS messages CASCADE;
-DROP TABLE IF EXISTS room_participants CASCADE;
-DROP TABLE IF EXISTS message_rooms CASCADE;
-DROP FUNCTION IF EXISTS create_dm_room(uuid,uuid);
-DROP FUNCTION IF EXISTS send_message(uuid,uuid,text,text,uuid,text,text,text,int);
+-- Step 1: Drop ALL existing policies on messaging tables (removes the broken ones)
+DO $$
+DECLARE pol RECORD;
+BEGIN
+  FOR pol IN
+    SELECT policyname, tablename
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename IN ('message_rooms','room_participants','messages','message_reactions')
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', pol.policyname, pol.tablename);
+  END LOOP;
+END $$;
 
-CREATE TABLE message_rooms (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
+-- Step 2: Make sure RLS is enabled on all tables
+ALTER TABLE message_rooms      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE room_participants  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE message_reactions  ENABLE ROW LEVEL SECURITY;
+
+-- Step 3: Re-create correct non-recursive policies
+
+-- room_participants: direct user_id check — NO self-reference
+CREATE POLICY "rp_select" ON room_participants FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "rp_insert" ON room_participants FOR INSERT WITH CHECK (true);
+CREATE POLICY "rp_update" ON room_participants FOR UPDATE USING (user_id = auth.uid());
+
+-- message_rooms: safe cross-table reference (room_participants no longer loops)
+CREATE POLICY "mr_select" ON message_rooms FOR SELECT USING (
+  EXISTS (SELECT 1 FROM room_participants WHERE room_id = id AND user_id = auth.uid())
 );
-CREATE TABLE room_participants (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  room_id uuid REFERENCES message_rooms(id) ON DELETE CASCADE,
-  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
-  last_read_at timestamptz DEFAULT now(),
-  UNIQUE(room_id, user_id)
-);
-CREATE TABLE messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  room_id uuid REFERENCES message_rooms(id) ON DELETE CASCADE,
-  sender_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
-  content text NOT NULL DEFAULT '',
-  message_type text NOT NULL DEFAULT 'text',
-  attachment_url text, attachment_name text, attachment_type text,
-  duration int, reply_to_id uuid REFERENCES messages(id) ON DELETE SET NULL,
-  is_deleted boolean DEFAULT false, deleted_at timestamptz, pinned_at timestamptz,
-  created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()
-);
-CREATE TABLE message_reactions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  message_id uuid REFERENCES messages(id) ON DELETE CASCADE,
-  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
-  emoji text NOT NULL, created_at timestamptz DEFAULT now(),
-  UNIQUE(message_id, user_id)
+CREATE POLICY "mr_insert" ON message_rooms FOR INSERT WITH CHECK (true);
+CREATE POLICY "mr_update" ON message_rooms FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM room_participants WHERE room_id = id AND user_id = auth.uid())
 );
 
-ALTER TABLE message_rooms ENABLE ROW LEVEL SECURITY;
-ALTER TABLE room_participants ENABLE ROW LEVEL SECURITY;
-ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE message_reactions ENABLE ROW LEVEL SECURITY;
+-- messages: simple auth check — avoids any recursion
+CREATE POLICY "msg_select"  ON messages FOR SELECT  USING (auth.uid() IS NOT NULL);
+CREATE POLICY "msg_insert"  ON messages FOR INSERT  WITH CHECK (sender_id = auth.uid());
+CREATE POLICY "msg_update"  ON messages FOR UPDATE  USING (sender_id = auth.uid());
 
-CREATE POLICY "participants can see their rooms" ON message_rooms FOR SELECT USING (EXISTS (SELECT 1 FROM room_participants WHERE room_id = id AND user_id = auth.uid()));
-CREATE POLICY "participants can insert rooms" ON message_rooms FOR INSERT WITH CHECK (true);
-CREATE POLICY "participants can update rooms" ON message_rooms FOR UPDATE USING (EXISTS (SELECT 1 FROM room_participants WHERE room_id = id AND user_id = auth.uid()));
-CREATE POLICY "users can see participants in their rooms" ON room_participants FOR SELECT USING (auth.uid() IS NOT NULL);
-CREATE POLICY "users can join rooms" ON room_participants FOR INSERT WITH CHECK (true);
-CREATE POLICY "users can update own participant row" ON room_participants FOR UPDATE USING (user_id = auth.uid());
-CREATE POLICY "participants can see messages" ON messages FOR SELECT USING (auth.uid() IS NOT NULL);
-CREATE POLICY "participants can send messages" ON messages FOR INSERT WITH CHECK (sender_id = auth.uid());
-CREATE POLICY "sender can edit their message" ON messages FOR UPDATE USING (sender_id = auth.uid());
-CREATE POLICY "participants can see reactions" ON message_reactions FOR SELECT USING (auth.uid() IS NOT NULL);
-CREATE POLICY "users can manage own reactions" ON message_reactions FOR ALL USING (user_id = auth.uid());
+-- reactions
+CREATE POLICY "rxn_select" ON message_reactions FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "rxn_all"    ON message_reactions FOR ALL    USING (user_id = auth.uid());
 
+-- Step 4: Re-create the create_dm_room function (safe even if it already exists)
 CREATE OR REPLACE FUNCTION create_dm_room(user1 uuid, user2 uuid)
 RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE existing_room uuid; new_room_id uuid;
@@ -85,7 +76,7 @@ BEGIN
 END;
 $$;
 
--- Enable realtime on room_participants (safe to run even if already enabled)
+-- Step 5: Enable realtime (safe to run even if already enabled)
 DO $$ BEGIN
   ALTER PUBLICATION supabase_realtime ADD TABLE room_participants;
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -274,13 +265,14 @@ export default function SettingsPage() {
         <Tabs.Panel value="database">
           <Paper p="xl" style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 12 }}>
             <Stack>
-              <Alert color="red" title="Messaging Fix Required" radius="md">
-                If messages fail to send with "infinite recursion" error, run the SQL below in Supabase SQL Editor to fix it.
+              <Alert color="orange" title="Messages Not Loading? Fix RLS Policies" radius="md">
+                If your Messages page shows "No conversations yet" on refresh or direct visit, the Supabase Row Level Security policies have a recursion bug. Run the SQL below to fix it. <Text span fw={700} c="orange">Your messages and data are NOT deleted.</Text>
               </Alert>
               <Text fw={600}>Steps:</Text>
               <Text size="sm" c="dimmed">1. Go to supabase.com → your project → SQL Editor</Text>
               <Text size="sm" c="dimmed">2. Click "New query", paste the SQL below, click Run</Text>
-              <Text size="sm" c="dimmed">3. You should see "Success. No rows returned"</Text>
+              <Text size="sm" c="dimmed">3. You should see "Success. No rows returned" — done!</Text>
+              <Text size="sm" c="green" fw={500}>✓ Safe — only fixes policies, does not delete any messages or data</Text>
               <Box style={{ position: 'relative' }}>
                 <Box
                   style={{
