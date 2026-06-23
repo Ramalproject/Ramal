@@ -533,9 +533,7 @@ export default function MessagesPage() {
                   size="xs"
                   leftSection={<IconDatabase size={13} />}
                   style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}
-                  component="a"
-                  href="/settings"
-                  onClick={e => { e.preventDefault(); window.location.href = '/settings?tab=database' }}
+                  onClick={() => navigate('/settings?tab=database')}
                 >
                   Go to Settings → Database
                 </Button>
