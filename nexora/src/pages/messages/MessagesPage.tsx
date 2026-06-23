@@ -252,7 +252,7 @@ function RoomItem({ room, isActive, myId, onClick }: { room: Room; isActive: boo
         </Box>
         <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
           <Group gap={0} justify="space-between">
-            <Text fw={600} c="white" size="sm" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <Text fw={600} size="sm" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {displayName}
             </Text>
             <Text size="xs" c="dimmed">
@@ -465,7 +465,7 @@ export default function MessagesPage() {
       <Box style={{ width: 320, flexShrink: 0, background: 'var(--nex-surface)', borderRight: '1px solid var(--nex-border)', display: 'flex', flexDirection: 'column' }}>
         <Box p="md" style={{ borderBottom: '1px solid var(--nex-border)' }}>
           <Group justify="space-between" mb="xs">
-            <Text fw={700} c="white" size="lg">Messages</Text>
+            <Text fw={700} size="lg">Messages</Text>
             <Tooltip label="New Chat">
               <ActionIcon variant="subtle" c="violet" onClick={() => setNewChatOpen(true)}><IconMessage size={18} /></ActionIcon>
             </Tooltip>
@@ -508,7 +508,7 @@ export default function MessagesPage() {
         <Center style={{ flex: 1 }}>
           <Stack align="center" gap="md">
             <Text style={{ fontSize: 48 }}>💬</Text>
-            <Text fw={700} c="white" size="xl">NEXORA Messages</Text>
+            <Text fw={700} size="xl">NEXORA Messages</Text>
             <Text c="dimmed">Select a conversation to start messaging</Text>
           </Stack>
         </Center>
@@ -532,7 +532,7 @@ export default function MessagesPage() {
                   }} />
                 </Box>
                 <Stack gap={0}>
-                  <Text fw={600} c="white">{otherUser?.full_name ?? 'Unknown'}</Text>
+                  <Text fw={600}>{otherUser?.full_name ?? 'Unknown'}</Text>
                   <Text size="xs" c="green">Online</Text>
                 </Stack>
               </Group>
@@ -592,7 +592,7 @@ export default function MessagesPage() {
                   <Avatar src={otherUser?.avatar_url} radius="xl" size={60}>
                     {otherUser?.full_name ? getInitials(otherUser.full_name) : '?'}
                   </Avatar>
-                  <Text c="white" fw={600}>{otherUser?.full_name}</Text>
+                  <Text fw={600}>{otherUser?.full_name}</Text>
                   <Text c="dimmed" size="sm">Say hello! 👋</Text>
                 </Stack>
               </Center>
@@ -737,7 +737,7 @@ export default function MessagesPage() {
       <Modal
         opened={newChatOpen}
         onClose={() => { setNewChatOpen(false); setNewChatRaw('') }}
-        title={<Text fw={700} c="white">New Message</Text>}
+        title={<Text fw={700}>New Message</Text>}
         centered size="sm"
         styles={{
           header: { background: 'var(--nex-surface-alt)', borderBottom: '1px solid var(--nex-border)' },
@@ -775,7 +775,7 @@ export default function MessagesPage() {
                   <Group gap={10}>
                     <Avatar src={user.avatar_url} radius="xl" size={40}>{getInitials(user.full_name)}</Avatar>
                     <Stack gap={0} style={{ flex: 1 }}>
-                      <Text fw={600} c="white" size="sm">{user.full_name}</Text>
+                      <Text fw={600} size="sm">{user.full_name}</Text>
                       <Text c="dimmed" size="xs">@{user.username}</Text>
                     </Stack>
                     {newChatLoading && <Loader size="xs" color="violet" />}
