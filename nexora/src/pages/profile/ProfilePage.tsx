@@ -82,7 +82,7 @@ ALTER TABLE message_reactions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "participants can see their rooms" ON message_rooms FOR SELECT USING (EXISTS (SELECT 1 FROM room_participants WHERE room_id = id AND user_id = auth.uid()));
 CREATE POLICY "participants can insert rooms" ON message_rooms FOR INSERT WITH CHECK (true);
 CREATE POLICY "participants can update rooms" ON message_rooms FOR UPDATE USING (EXISTS (SELECT 1 FROM room_participants WHERE room_id = id AND user_id = auth.uid()));
-CREATE POLICY "users can see participants in their rooms" ON room_participants FOR SELECT USING (user_id = auth.uid() OR EXISTS (SELECT 1 FROM room_participants rp WHERE rp.room_id = room_id AND rp.user_id = auth.uid()));
+CREATE POLICY "users can see participants in their rooms" ON room_participants FOR SELECT USING (auth.uid() IS NOT NULL);
 CREATE POLICY "users can join rooms" ON room_participants FOR INSERT WITH CHECK (true);
 CREATE POLICY "users can update own participant row" ON room_participants FOR UPDATE USING (user_id = auth.uid());
 CREATE POLICY "participants can see messages" ON messages FOR SELECT USING (EXISTS (SELECT 1 FROM room_participants WHERE room_id = messages.room_id AND user_id = auth.uid()));
