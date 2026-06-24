@@ -54,8 +54,7 @@ export default function AIConversationPage() {
   const [transcript, setTranscript] = useState<Entry[]>([])
   const [liveText, setLiveText] = useState('')
   const [textInput, setTextInput] = useState('')
-  const [textMode, setTextMode] = useState(false)       // only true when user opts in
-  const [voiceUnsupported, setVoiceUnsupported] = useState(false)  // browser lacks SR
+  const [textMode, setTextMode] = useState(false)
   const [duration, setDuration] = useState(0)
 
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -128,8 +127,12 @@ export default function AIConversationPage() {
   }
 
   // ── Speech Recognition ────────────────────────────────────────────────────
+  function switchToTextMode() {
+    setTextMode(true)
+    setTimeout(() => textInputRef.current?.focus(), 150)
+  }
+
   function doStartListening() {
-    // If user chose text mode manually, don't start SR
     if (textMode) {
       setTimeout(() => textInputRef.current?.focus(), 150)
       return
@@ -137,14 +140,13 @@ export default function AIConversationPage() {
 
     const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
     if (!SR) {
-      // Browser doesn't support SR — show notice, don't force text mode
-      setVoiceUnsupported(true)
+      switchToTextMode()
       return
     }
 
     let recog: any
     try { recog = new SR() } catch {
-      setVoiceUnsupported(true)
+      switchToTextMode()
       return
     }
     recogRef.current = recog
@@ -157,12 +159,10 @@ export default function AIConversationPage() {
     }
     recog.onerror = (ev: any) => {
       setLiveText('')
-      // 'not-allowed' = mic blocked; 'service-not-allowed' = HTTPS required
       const err = ev?.error ?? ''
       if (err === 'not-allowed' || err === 'service-not-allowed') {
-        setVoiceUnsupported(true)
+        switchToTextMode()
       } else if (phaseRef.current === 'listening') {
-        // Transient error — retry
         setTimeout(doStartListening, 600)
       }
     }
@@ -173,12 +173,11 @@ export default function AIConversationPage() {
         addEntry('user', final)
         doChat(final)
       } else if (phaseRef.current === 'listening' && !textMode) {
-        // No speech — restart recognition automatically
         setTimeout(doStartListening, 400)
       }
     }
     try { recog.start() } catch {
-      setVoiceUnsupported(true)
+      switchToTextMode()
     }
   }
 
@@ -236,10 +235,13 @@ export default function AIConversationPage() {
 
   // ── Button actions ────────────────────────────────────────────────────────
   function handleStart() {
-    setPhase('listening')  // Instant visual feedback
-    // Only grab mic for volume viz if NOT using SpeechRecognition (SR manages its own mic)
+    setPhase('listening')
     const hasSR = !!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition
-    if (!hasSR) startMic()
+    if (!hasSR) {
+      // No speech recognition — go straight to text mode
+      switchToTextMode()
+      return
+    }
     doStartListening()
   }
 
@@ -266,7 +268,6 @@ export default function AIConversationPage() {
     setLiveText('')
     setTextInput('')
     setTextMode(false)
-    setVoiceUnsupported(false)
     setDuration(0)
     historyRef.current = []
   }
@@ -333,9 +334,7 @@ export default function AIConversationPage() {
               <motion.div style={{ width: 8, height: 8, borderRadius: '50%', background: PHASE_COLOR[phase] }}
                 animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 1.2, repeat: Infinity }} />
               <span style={{ fontSize: 13, fontWeight: 500, color: PHASE_COLOR[phase] }}>
-                {textMode && phase === 'listening' ? 'Type your message below'
-                : voiceUnsupported && phase === 'listening' ? 'Voice unavailable — see notice below'
-                : PHASE_LABEL[phase]}
+                {textMode && phase === 'listening' ? 'Type your message below' : PHASE_LABEL[phase]}
               </span>
             </div>
             {phase === 'thinking' && (
@@ -383,27 +382,7 @@ export default function AIConversationPage() {
         </div>
       </div>
 
-      {/* Voice-unsupported notice */}
-      <AnimatePresence>
-        {voiceUnsupported && isActive && !textMode && (
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            style={{ position: 'relative', zIndex: 11, margin: '8px 20px 0', padding: '10px 16px', borderRadius: 12, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 16 }}>🎤</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#f87171' }}>Voice not available</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
-                Use Chrome or Edge on HTTPS for voice. Or type instead:
-              </div>
-            </div>
-            <motion.button whileTap={{ scale: 0.95 }} onClick={() => { setTextMode(true); setVoiceUnsupported(false); setTimeout(() => textInputRef.current?.focus(), 150) }}
-              style={{ padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', color: '#fff', fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
-              Type instead
-            </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Text input — shown when user opts in */}
+      {/* Text input — auto-shown when voice unavailable or user opts in */}
       <AnimatePresence>
         {textMode && isActive && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
@@ -516,9 +495,9 @@ export default function AIConversationPage() {
         )}
       </motion.div>
 
-      {/* Camera PiP */}
+      {/* Camera PiP — only when camera is on */}
       <AnimatePresence>
-        {(isCameraOn || isActive) && (
+        {isCameraOn && (
           <UserCameraPreview isCameraOn={isCameraOn} isMuted={isMuted}
             userAvatarUrl={profile?.avatar_url} userName={profile?.full_name ?? 'You'} />
         )}
