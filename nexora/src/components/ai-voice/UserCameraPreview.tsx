@@ -16,6 +16,7 @@ export default function UserCameraPreview({ isCameraOn, isMuted, userAvatarUrl, 
 
   useEffect(() => {
     if (isCameraOn) {
+      if (!navigator.mediaDevices?.getUserMedia) return   // HTTP / unsupported browser
       navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
         .then(stream => {
           streamRef.current = stream

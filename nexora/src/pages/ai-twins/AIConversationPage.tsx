@@ -90,6 +90,14 @@ export default function AIConversationPage() {
 
   // ── Recording ──────────────────────────────────────────────────────────────
   async function startRecording() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      // HTTP or unsupported browser — go to text mode
+      setTextMode(true)
+      setPhase('listening')
+      setStatusMsg('Mic needs HTTPS. Type your message below.')
+      setTimeout(() => textInputRef.current?.focus(), 150)
+      return
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
       const mimeType = getSupportedMimeType()
