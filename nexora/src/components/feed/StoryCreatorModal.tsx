@@ -48,12 +48,23 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
   const [publishing, setPublishing] = useState(false)
   const [published, setPublished] = useState(false)
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
+  const [filterLabel, setFilterLabel] = useState<string | null>(null)
+  const filterLabelTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const activeFilter = FILTERS.find(f => f.id === selectedFilter)?.css ?? 'none'
 
-  // Start camera
+  function changeFilter(id: string) {
+    setSelectedFilter(id)
+    const f = FILTERS.find(fl => fl.id === id)
+    if (!f) return
+    setFilterLabel(`${f.emoji} ${f.label}`)
+    if (filterLabelTimer.current) clearTimeout(filterLabelTimer.current)
+    filterLabelTimer.current = setTimeout(() => setFilterLabel(null), 1800)
+  }
+
+  // Reset state when modal opens/closes
   useEffect(() => {
-    if (!opened) return
+    if (!opened) { stopCamera(); return }
     setCapturedImage(null)
     setPublished(false)
     setTextOverlay('')
@@ -66,11 +77,16 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
       setMode('photo')
       return
     }
-
     setMode('camera')
     startCamera()
     return () => stopCamera()
-  }, [opened, facingMode]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [opened]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Restart camera when facingMode changes (without resetting filter)
+  useEffect(() => {
+    if (!opened || mode !== 'camera') return
+    startCamera()
+  }, [facingMode]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function startCamera() {
     try {
@@ -373,24 +389,34 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
                   <Box style={{ display: 'flex', gap: 8, width: 'max-content' }}>
                     {FILTERS.map(f => (
                       <motion.button key={f.id} whileTap={{ scale: 0.9 }}
-                        onClick={() => setSelectedFilter(f.id)}
+                        onClick={() => changeFilter(f.id)}
                         style={{
                           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                           background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
                         }}>
-                        {/* Filter thumbnail */}
+                        {/* Filter thumbnail — gradient swatch with filter applied */}
                         <Box style={{
-                          width: 56, height: 56, borderRadius: 12, overflow: 'hidden',
-                          border: `2px solid ${selectedFilter === f.id ? '#7c3aed' : 'rgba(255,255,255,0.2)'}`,
-                          boxShadow: selectedFilter === f.id ? '0 0 12px rgba(124,58,237,0.6)' : 'none',
-                          background: 'linear-gradient(135deg,#1a1040,#0f1729)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 24,
+                          width: 58, height: 58, borderRadius: 14, overflow: 'hidden',
+                          border: `2.5px solid ${selectedFilter === f.id ? '#7c3aed' : 'rgba(255,255,255,0.2)'}`,
+                          boxShadow: selectedFilter === f.id ? '0 0 16px rgba(124,58,237,0.7)' : 'none',
                           filter: f.css,
+                          position: 'relative',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
                         }}>
-                          {f.emoji}
+                          {/* Gradient preview swatch */}
+                          <Box style={{
+                            position: 'absolute', inset: 0,
+                            background: 'linear-gradient(135deg,#7c3aed 0%,#06b6d4 50%,#10b981 100%)',
+                          }} />
+                          <Box style={{
+                            position: 'absolute', inset: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 22,
+                          }}>
+                            {f.emoji}
+                          </Box>
                         </Box>
-                        <Text size="xs" style={{ color: selectedFilter === f.id ? '#a78bfa' : 'rgba(255,255,255,0.6)', fontWeight: selectedFilter === f.id ? 700 : 400 }}>
+                        <Text size="xs" style={{ color: selectedFilter === f.id ? '#a78bfa' : 'rgba(255,255,255,0.65)', fontWeight: selectedFilter === f.id ? 700 : 400 }}>
                           {f.label}
                         </Text>
                       </motion.button>
@@ -442,18 +468,30 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
                 )}
               </Box>
 
-              {/* ── Filter label overlay ── */}
-              {selectedFilter !== 'normal' && !capturedImage && (
-                <Box style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', pointerEvents: 'none', zIndex: 5 }}>
-                  <motion.div key={selectedFilter} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: [0, 1, 1, 0] }} transition={{ duration: 2 }}>
-                    <Box style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', borderRadius: 12, padding: '8px 16px' }}>
-                      <Text fw={700} size="lg" style={{ color: 'white' }}>
-                        {FILTERS.find(f => f.id === selectedFilter)?.emoji} {FILTERS.find(f => f.id === selectedFilter)?.label}
+              {/* ── Live filter label (Snapchat-style flash) ── */}
+              <AnimatePresence>
+                {filterLabel && (
+                  <motion.div
+                    key={filterLabel}
+                    initial={{ opacity: 0, scale: 0.7, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                    transition={{ type: 'spring', damping: 18, stiffness: 300 }}
+                    style={{ position: 'absolute', top: '44%', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'none', zIndex: 15 }}
+                  >
+                    <Box style={{
+                      background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)',
+                      borderRadius: 20, padding: '10px 22px',
+                      border: '1px solid rgba(124,58,237,0.5)',
+                      boxShadow: '0 4px 24px rgba(124,58,237,0.4)',
+                    }}>
+                      <Text fw={800} size="xl" ta="center" style={{ color: 'white', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+                        {filterLabel}
                       </Text>
                     </Box>
                   </motion.div>
-                </Box>
-              )}
+                )}
+              </AnimatePresence>
             </Box>
 
             {/* Hidden elements */}

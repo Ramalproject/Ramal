@@ -55,6 +55,7 @@ function ReelsBar() {
               whileHover={{ scale: 1.04, y: -2 }}
               whileTap={{ scale: 0.97 }}
               style={{ flexShrink: 0, cursor: 'pointer' }}
+              onClick={() => navigate('/reels')}
             >
               <Box style={{
                 width: 110, height: 190, borderRadius: 16,

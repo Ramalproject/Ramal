@@ -23,6 +23,7 @@ import SettingsPage from './pages/settings/SettingsPage'
 import ExplorePage from './pages/explore/ExplorePage'
 import CommunitiesPage from './pages/communities/CommunitiesPage'
 import NotificationsPage from './pages/notifications/NotificationsPage'
+import ReelsPage from './pages/reels/ReelsPage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; msg: string }> {
   state = { hasError: false, msg: '' }
@@ -102,6 +103,7 @@ export default function App() {
                     <Route path="explore" element={<ExplorePage />} />
                     <Route path="communities" element={<CommunitiesPage />} />
                     <Route path="notifications" element={<NotificationsPage />} />
+                    <Route path="reels" element={<ReelsPage />} />
                   </Route>
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
