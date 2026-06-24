@@ -7,6 +7,7 @@ import { getInitials } from '../../utils'
 import PostCard from '../../components/feed/PostCard'
 import CreatePostModal from '../../components/feed/CreatePostModal'
 import StoryBar from '../../components/feed/StoryBar'
+import StoryCreatorModal from '../../components/feed/StoryCreatorModal'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
@@ -14,9 +15,90 @@ import { useFollowUser } from '../../hooks/useProfile'
 import {
   IconPhoto, IconMoodSmile, IconMapPin, IconSparkles, IconTrendingUp,
   IconRobot, IconFlame, IconHash, IconUsers, IconChartBar, IconBolt,
+  IconPlayerPlay, IconHeart,
 } from '@tabler/icons-react'
 import type { Profile } from '../../types'
 import { FEATURED_CHARACTERS } from '../../data/featuredCharacters'
+import { ScrollArea } from '@mantine/core'
+
+/* ── Mock Reels Data ─────────────────────────────────────────────────────── */
+const MOCK_REELS = [
+  { id: '1', user: 'Alex J.', gradient: 'linear-gradient(160deg,#7c3aed,#06b6d4)', likes: '12.4k', emoji: '🌊', caption: 'Ocean vibes 🌊' },
+  { id: '2', user: 'Sara C.', gradient: 'linear-gradient(160deg,#f59e0b,#ef4444)', likes: '8.9k', emoji: '🔥', caption: 'Day in my life' },
+  { id: '3', user: 'Mike D.', gradient: 'linear-gradient(160deg,#10b981,#06b6d4)', likes: '5.2k', emoji: '🎵', caption: 'New track drop' },
+  { id: '4', user: 'Anna P.', gradient: 'linear-gradient(160deg,#ec4899,#8b5cf6)', likes: '21k',  emoji: '👑', caption: 'Fashion week' },
+  { id: '5', user: 'Priya M.', gradient: 'linear-gradient(160deg,#f97316,#eab308)', likes: '3.7k', emoji: '🚀', caption: 'Tech talk' },
+  { id: '6', user: 'Tom L.', gradient: 'linear-gradient(160deg,#06b6d4,#10b981)', likes: '9.1k', emoji: '🎭', caption: 'Comedy gold' },
+]
+
+/* ── Reels Section ─────────────────────────────────────────────────────────── */
+function ReelsBar() {
+  const navigate = useNavigate()
+  return (
+    <Box style={{ background: 'var(--nex-surface)', border: '1px solid var(--nex-border)', borderRadius: 16, padding: '14px 16px' }}>
+      <Group justify="space-between" mb={12}>
+        <Group gap={8}>
+          <Box style={{ width: 30, height: 30, borderRadius: 9, background: 'linear-gradient(135deg,#7c3aed,#06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <IconPlayerPlay size={14} color="white" fill="white" />
+          </Box>
+          <Text fw={700} size="sm" style={{ color: 'var(--nex-text)' }}>Reels</Text>
+        </Group>
+        <Text size="xs" c="violet" fw={600} style={{ cursor: 'pointer' }} onClick={() => navigate('/reels')}>
+          See all
+        </Text>
+      </Group>
+      <ScrollArea scrollbarSize={4} type="scroll">
+        <Box style={{ display: 'flex', gap: 10, paddingBottom: 4 }}>
+          {MOCK_REELS.map(reel => (
+            <motion.div
+              key={reel.id}
+              whileHover={{ scale: 1.04, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              style={{ flexShrink: 0, cursor: 'pointer' }}
+            >
+              <Box style={{
+                width: 110, height: 190, borderRadius: 16,
+                background: reel.gradient,
+                position: 'relative', overflow: 'hidden',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+              }}>
+                {/* Play overlay */}
+                <Box style={{
+                  position: 'absolute', inset: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Box style={{
+                    width: 36, height: 36, borderRadius: '50%',
+                    background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '1.5px solid rgba(255,255,255,0.4)',
+                  }}>
+                    <IconPlayerPlay size={16} color="white" fill="white" />
+                  </Box>
+                </Box>
+                {/* Emoji decoration */}
+                <Box style={{ position: 'absolute', top: 10, left: 10, fontSize: 22 }}>{reel.emoji}</Box>
+                {/* Bottom info */}
+                <Box style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.75), transparent)',
+                  padding: '20px 8px 8px',
+                }}>
+                  <Text size="xs" fw={700} style={{ color: 'white', lineHeight: 1.2 }} lineClamp={2}>{reel.caption}</Text>
+                  <Group gap={4} mt={3}>
+                    <IconHeart size={10} color="white" />
+                    <Text size="xs" style={{ color: 'rgba(255,255,255,0.85)' }}>{reel.likes}</Text>
+                  </Group>
+                  <Text size="xs" style={{ color: 'rgba(255,255,255,0.65)', marginTop: 1 }}>{reel.user}</Text>
+                </Box>
+              </Box>
+            </motion.div>
+          ))}
+        </Box>
+      </ScrollArea>
+    </Box>
+  )
+}
 
 /* ── Suggested User Row ───────────────────────────────────────────────────── */
 function SuggestedUser({ profile, currentUserId }: { profile: Profile & { followers_count?: number }; currentUserId: string }) {
@@ -265,6 +347,7 @@ export default function FeedPage() {
   const { user, profile } = useAuthStore()
   const { data: posts = [], isLoading } = useFeed()
   const [createOpen, setCreateOpen] = useState(false)
+  const [storyOpen, setStoryOpen] = useState(false)
   const navigate = useNavigate()
 
   return (
@@ -276,7 +359,10 @@ export default function FeedPage() {
           <Stack gap="md">
 
             {/* Story Bar */}
-            <StoryBar onAddStory={() => setCreateOpen(true)} />
+            <StoryBar onAddStory={() => setStoryOpen(true)} />
+
+            {/* Reels */}
+            <ReelsBar />
 
             {/* Create Post Card */}
             <motion.div whileHover={{ y: -1 }}>
@@ -370,6 +456,7 @@ export default function FeedPage() {
       </Grid>
 
       <CreatePostModal opened={createOpen} onClose={() => setCreateOpen(false)} />
+      <StoryCreatorModal opened={storyOpen} onClose={() => setStoryOpen(false)} />
     </Box>
   )
 }
