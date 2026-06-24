@@ -34,6 +34,7 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
   const [mode, setMode] = useState<Mode>('camera')
@@ -195,23 +196,40 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
                 <Box style={{
                   width: '100%', height: '100%',
                   background: 'linear-gradient(160deg,#0d0820,#0f1729)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24,
+                  padding: '0 32px',
                 }}>
                   <Box style={{
-                    width: 80, height: 80, borderRadius: '50%',
-                    background: 'rgba(124,58,237,0.15)', border: '2px solid rgba(124,58,237,0.4)',
+                    width: 90, height: 90, borderRadius: '50%',
+                    background: 'linear-gradient(135deg,rgba(124,58,237,0.25),rgba(6,182,212,0.15))',
+                    border: '2px solid rgba(124,58,237,0.5)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 0 40px rgba(124,58,237,0.3)',
                   }}>
-                    <IconPhoto size={36} color="#7c3aed" />
+                    <IconPhoto size={40} color="#7c3aed" />
                   </Box>
-                  <Text c="dimmed" size="sm" ta="center">Camera unavailable on HTTP<br />Upload a photo instead</Text>
-                  <motion.button whileTap={{ scale: 0.95 }}
-                    onClick={() => fileRef.current?.click()}
+                  <Box ta="center">
+                    <Text fw={700} size="md" style={{ color: 'white' }} mb={4}>Create Your Story</Text>
+                    <Text c="dimmed" size="sm" ta="center">Take a new photo or choose one<br />from your gallery</Text>
+                  </Box>
+                  {/* Take Photo button — uses native camera on mobile */}
+                  <motion.button whileTap={{ scale: 0.95 }} onClick={() => cameraInputRef.current?.click()}
                     style={{
-                      padding: '12px 28px', borderRadius: 50, border: 'none', cursor: 'pointer',
-                      background: 'linear-gradient(135deg,#7c3aed,#06b6d4)', color: '#fff', fontWeight: 700, fontSize: 14,
+                      width: '100%', padding: '14px', borderRadius: 50, border: 'none', cursor: 'pointer',
+                      background: 'linear-gradient(135deg,#7c3aed,#06b6d4)', color: '#fff', fontWeight: 700, fontSize: 15,
+                      boxShadow: '0 4px 20px rgba(124,58,237,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                     }}>
-                    Choose Photo
+                    📸 Take Photo
+                  </motion.button>
+                  {/* Gallery button */}
+                  <motion.button whileTap={{ scale: 0.95 }} onClick={() => fileRef.current?.click()}
+                    style={{
+                      width: '100%', padding: '14px', borderRadius: 50, cursor: 'pointer',
+                      background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)',
+                      color: '#fff', fontWeight: 600, fontSize: 15, backdropFilter: 'blur(8px)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    }}>
+                    🖼 Choose from Gallery
                   </motion.button>
                 </Box>
               )}
@@ -383,16 +401,18 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
                 {/* Action row */}
                 {!capturedImage ? (
                   <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
-                    {/* Shutter */}
-                    <motion.button whileTap={{ scale: 0.9 }} onClick={mode === 'camera' ? capturePhoto : () => fileRef.current?.click()}
-                      style={{
-                        width: 72, height: 72, borderRadius: '50%', border: '4px solid white',
-                        background: 'white', cursor: 'pointer', padding: 4,
-                        boxShadow: '0 4px 20px rgba(124,58,237,0.5)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                      <Box style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#06b6d4)' }} />
-                    </motion.button>
+                    {/* Shutter — capture from camera in camera mode, take photo on HTTP */}
+                    {mode === 'camera' ? (
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={capturePhoto}
+                        style={{
+                          width: 72, height: 72, borderRadius: '50%', border: '4px solid white',
+                          background: 'white', cursor: 'pointer', padding: 4,
+                          boxShadow: '0 4px 20px rgba(124,58,237,0.5)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                        <Box style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#06b6d4)' }} />
+                      </motion.button>
+                    ) : null}
                   </Box>
                 ) : (
                   <Box style={{ display: 'flex', gap: 12 }}>
@@ -439,6 +459,7 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
             {/* Hidden elements */}
             <canvas ref={canvasRef} style={{ display: 'none' }} />
             <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileUpload} />
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="user" style={{ display: 'none' }} onChange={handleFileUpload} />
           </motion.div>
 
           {/* ── Sparkle icon branding ── */}
