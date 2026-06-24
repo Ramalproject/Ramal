@@ -14,15 +14,20 @@ interface Props {
 }
 
 const FILTERS = [
-  { id: 'normal',   label: 'Normal',   css: 'none',                                                       emoji: '✨' },
-  { id: 'vintage',  label: 'Vintage',  css: 'sepia(60%) contrast(90%) brightness(88%) saturate(80%)',     emoji: '📷' },
-  { id: 'neon',     label: 'Neon',     css: 'saturate(250%) hue-rotate(80deg) brightness(110%)',          emoji: '🌈' },
-  { id: 'techno',   label: 'Techno',   css: 'hue-rotate(180deg) saturate(180%) contrast(115%)',           emoji: '🤖' },
-  { id: 'glitch',   label: 'Glitch',   css: 'hue-rotate(270deg) saturate(200%) invert(8%)',               emoji: '⚡' },
-  { id: 'funny',    label: 'Funny',    css: 'saturate(400%) contrast(140%) brightness(105%)',             emoji: '🎭' },
-  { id: 'bw',       label: 'B&W',      css: 'grayscale(100%) contrast(110%)',                             emoji: '🖤' },
-  { id: 'warm',     label: 'Warm',     css: 'sepia(25%) saturate(160%) brightness(105%) hue-rotate(-10deg)', emoji: '☀️' },
-  { id: 'cool',     label: 'Cool',     css: 'hue-rotate(200deg) saturate(130%) brightness(105%)',        emoji: '❄️' },
+  { id: 'normal',    label: 'Normal',    css: 'none',                                                                           emoji: '✨', overlay: null as string | null },
+  { id: 'daymode',   label: 'Day Mode',  css: 'brightness(140%) saturate(120%) contrast(108%)',                                emoji: '☀️', overlay: 'rgba(255,220,120,0.10)' },
+  { id: 'night',     label: 'Night',     css: 'brightness(52%) saturate(65%) hue-rotate(215deg) contrast(128%)',              emoji: '🌙', overlay: 'rgba(5,20,90,0.32)' },
+  { id: 'golden',    label: 'Golden Hr', css: 'sepia(48%) saturate(200%) brightness(115%) hue-rotate(-20deg)',                emoji: '🌅', overlay: 'rgba(255,130,0,0.14)' },
+  { id: 'cyberpunk', label: 'Cyberpunk', css: 'saturate(290%) contrast(138%) hue-rotate(158deg) brightness(86%)',            emoji: '🤖', overlay: 'rgba(0,255,190,0.08)' },
+  { id: 'drama',     label: 'Drama',     css: 'contrast(170%) saturate(72%) brightness(80%)',                                 emoji: '🎭', overlay: null },
+  { id: 'vintage',   label: 'Vintage',   css: 'sepia(65%) contrast(88%) brightness(85%) saturate(75%)',                      emoji: '📷', overlay: 'rgba(180,100,20,0.10)' },
+  { id: 'vivid',     label: 'Vivid',     css: 'saturate(245%) contrast(120%) brightness(110%)',                              emoji: '🌈', overlay: null },
+  { id: 'sunset',    label: 'Sunset',    css: 'sepia(28%) saturate(215%) hue-rotate(-24deg) brightness(108%) contrast(108%)', emoji: '🌇', overlay: 'rgba(255,60,0,0.13)' },
+  { id: 'aqua',      label: 'Aqua',      css: 'hue-rotate(168deg) saturate(148%) brightness(112%) contrast(110%)',           emoji: '🌊', overlay: 'rgba(0,190,255,0.10)' },
+  { id: 'bw',        label: 'B&W',       css: 'grayscale(100%) contrast(120%) brightness(108%)',                             emoji: '🖤', overlay: null },
+  { id: 'matrix',    label: 'Matrix',    css: 'hue-rotate(88deg) saturate(265%) contrast(128%) brightness(80%)',            emoji: '💚', overlay: 'rgba(0,255,0,0.09)' },
+  { id: 'fade',      label: 'Fade',      css: 'contrast(80%) brightness(118%) saturate(60%)',                                emoji: '🌫️', overlay: 'rgba(255,255,255,0.16)' },
+  { id: 'rose',      label: 'Rose',      css: 'hue-rotate(-30deg) saturate(180%) brightness(108%) contrast(108%)',          emoji: '🌸', overlay: 'rgba(255,60,120,0.10)' },
 ]
 
 const STICKERS = ['😂', '🔥', '💜', '⭐', '🚀', '👑', '💫', '🎉', '🌊', '🦋', '🎵', '💎']
@@ -33,6 +38,7 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
   const { profile } = useAuthStore()
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const thumbCanvasRef = useRef<HTMLCanvasElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -40,6 +46,7 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
   const [mode, setMode] = useState<Mode>('camera')
   const [cameraReady, setCameraReady] = useState(false)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [previewFrame, setPreviewFrame] = useState<string | null>(null)
   const [selectedFilter, setSelectedFilter] = useState('normal')
   const [textOverlay, setTextOverlay] = useState('')
   const [showTextInput, setShowTextInput] = useState(false)
@@ -85,8 +92,26 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
   // Restart camera when facingMode changes (without resetting filter)
   useEffect(() => {
     if (!opened || mode !== 'camera') return
+    setPreviewFrame(null)
     startCamera()
   }, [facingMode]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Capture a small thumbnail frame 1s after camera is ready (for filter previews)
+  useEffect(() => {
+    if (!cameraReady) return
+    const timer = setTimeout(() => {
+      const video = videoRef.current
+      const canvas = thumbCanvasRef.current
+      if (!video || !canvas) return
+      canvas.width = 72; canvas.height = 72
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      if (facingMode === 'user') { ctx.translate(72, 0); ctx.scale(-1, 1) }
+      ctx.drawImage(video, 0, 0, 72, 72)
+      setPreviewFrame(canvas.toDataURL('image/jpeg', 0.6))
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [cameraReady, facingMode])
 
   async function startCamera() {
     try {
@@ -133,7 +158,12 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = ev => setCapturedImage(ev.target?.result as string)
+    reader.onload = ev => {
+      const dataUrl = ev.target?.result as string
+      setCapturedImage(dataUrl)
+      // Also use as preview frame for filter thumbnails
+      if (!previewFrame) setPreviewFrame(dataUrl)
+    }
     reader.readAsDataURL(file)
     e.target.value = ''
   }
@@ -193,18 +223,25 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
 
               {/* Video feed */}
               {!capturedImage && mode === 'camera' && (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  style={{
-                    width: '100%', height: '100%', objectFit: 'cover',
-                    filter: activeFilter,
-                    transform: facingMode === 'user' ? 'scaleX(-1)' : 'none',
-                    display: cameraReady ? 'block' : 'none',
-                  }}
-                />
+                <Box style={{ position: 'relative', width: '100%', height: '100%', display: cameraReady ? 'block' : 'none' }}>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    style={{
+                      width: '100%', height: '100%', objectFit: 'cover',
+                      filter: activeFilter,
+                      transform: facingMode === 'user' ? 'scaleX(-1)' : 'none',
+                    }}
+                  />
+                  {/* Color grade overlay */}
+                  {FILTERS.find(f => f.id === selectedFilter)?.overlay && (
+                    <Box style={{ position: 'absolute', inset: 0, background: FILTERS.find(f => f.id === selectedFilter)!.overlay!, pointerEvents: 'none', mixBlendMode: 'multiply' }} />
+                  )}
+                  {/* Cinematic vignette */}
+                  <Box style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 35%, rgba(0,0,0,0.55) 100%)', pointerEvents: 'none' }} />
+                </Box>
               )}
 
               {/* No camera — upload placeholder */}
@@ -257,6 +294,12 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
                     width: '100%', height: '100%', objectFit: 'cover',
                     filter: activeFilter,
                   }} />
+                  {/* Color grade overlay */}
+                  {FILTERS.find(f => f.id === selectedFilter)?.overlay && (
+                    <Box style={{ position: 'absolute', inset: 0, background: FILTERS.find(f => f.id === selectedFilter)!.overlay!, pointerEvents: 'none', mixBlendMode: 'multiply' }} />
+                  )}
+                  {/* Cinematic vignette */}
+                  <Box style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 35%, rgba(0,0,0,0.55) 100%)', pointerEvents: 'none' }} />
                   {/* Text overlay */}
                   {textOverlay && (
                     <Box style={{
@@ -387,40 +430,49 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
                 {/* Filter strip */}
                 <Box style={{ overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 12 }}>
                   <Box style={{ display: 'flex', gap: 8, width: 'max-content' }}>
-                    {FILTERS.map(f => (
-                      <motion.button key={f.id} whileTap={{ scale: 0.9 }}
-                        onClick={() => changeFilter(f.id)}
-                        style={{
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                          background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
-                        }}>
-                        {/* Filter thumbnail — gradient swatch with filter applied */}
-                        <Box style={{
-                          width: 58, height: 58, borderRadius: 14, overflow: 'hidden',
-                          border: `2.5px solid ${selectedFilter === f.id ? '#7c3aed' : 'rgba(255,255,255,0.2)'}`,
-                          boxShadow: selectedFilter === f.id ? '0 0 16px rgba(124,58,237,0.7)' : 'none',
-                          filter: f.css,
-                          position: 'relative',
-                          transition: 'border-color 0.2s, box-shadow 0.2s',
-                        }}>
-                          {/* Gradient preview swatch */}
-                          <Box style={{
-                            position: 'absolute', inset: 0,
-                            background: 'linear-gradient(135deg,#7c3aed 0%,#06b6d4 50%,#10b981 100%)',
-                          }} />
-                          <Box style={{
-                            position: 'absolute', inset: 0,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 22,
+                    {FILTERS.map(f => {
+                      const thumbSrc = capturedImage || previewFrame
+                      return (
+                        <motion.button key={f.id} whileTap={{ scale: 0.9 }}
+                          onClick={() => changeFilter(f.id)}
+                          style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                            background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
                           }}>
-                            {f.emoji}
+                          {/* Filter thumbnail — shows real face/photo with filter applied */}
+                          <Box style={{
+                            width: 60, height: 60, borderRadius: 14, overflow: 'hidden',
+                            border: `2.5px solid ${selectedFilter === f.id ? '#a78bfa' : 'rgba(255,255,255,0.18)'}`,
+                            boxShadow: selectedFilter === f.id ? '0 0 18px rgba(124,58,237,0.8)' : 'none',
+                            position: 'relative',
+                            transition: 'border-color 0.15s, box-shadow 0.15s',
+                          }}>
+                            {thumbSrc ? (
+                              <>
+                                <img src={thumbSrc} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: f.css }} />
+                                {f.overlay && <Box style={{ position: 'absolute', inset: 0, background: f.overlay, mixBlendMode: 'multiply' }} />}
+                                {/* Vignette on thumb */}
+                                <Box style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(0,0,0,0.45) 100%)' }} />
+                              </>
+                            ) : (
+                              <>
+                                <Box style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,#7c3aed 0%,#06b6d4 50%,#10b981 100%)', filter: f.css }} />
+                                <Box style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>{f.emoji}</Box>
+                              </>
+                            )}
+                            {/* Selected checkmark */}
+                            {selectedFilter === f.id && (
+                              <Box style={{ position: 'absolute', top: 3, right: 3, width: 14, height: 14, borderRadius: '50%', background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Text style={{ color: 'white', fontSize: 8, lineHeight: 1 }}>✓</Text>
+                              </Box>
+                            )}
                           </Box>
-                        </Box>
-                        <Text size="xs" style={{ color: selectedFilter === f.id ? '#a78bfa' : 'rgba(255,255,255,0.65)', fontWeight: selectedFilter === f.id ? 700 : 400 }}>
-                          {f.label}
-                        </Text>
-                      </motion.button>
-                    ))}
+                          <Text size="xs" style={{ color: selectedFilter === f.id ? '#a78bfa' : 'rgba(255,255,255,0.6)', fontWeight: selectedFilter === f.id ? 700 : 400, fontSize: 10 }}>
+                            {f.label}
+                          </Text>
+                        </motion.button>
+                      )
+                    })}
                   </Box>
                 </Box>
 
@@ -496,6 +548,7 @@ export default function StoryCreatorModal({ opened, onClose }: Props) {
 
             {/* Hidden elements */}
             <canvas ref={canvasRef} style={{ display: 'none' }} />
+            <canvas ref={thumbCanvasRef} style={{ display: 'none' }} />
             <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileUpload} />
             <input ref={cameraInputRef} type="file" accept="image/*" capture="user" style={{ display: 'none' }} onChange={handleFileUpload} />
           </motion.div>
