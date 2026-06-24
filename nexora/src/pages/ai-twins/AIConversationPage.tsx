@@ -92,30 +92,6 @@ export default function AIConversationPage() {
   }, [transcript, liveText])
 
   // ── Mic / Volume ──────────────────────────────────────────────────────────
-  function startVolumeLoop() {
-    const tick = () => {
-      if (analyserRef.current) {
-        const buf = new Uint8Array(analyserRef.current.frequencyBinCount)
-        analyserRef.current.getByteFrequencyData(buf)
-        setVolume(buf.reduce((a, b) => a + b, 0) / buf.length / 128)
-      }
-      volRafRef.current = requestAnimationFrame(tick)
-    }
-    tick()
-  }
-
-  async function startMic() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      micStreamRef.current = stream
-      audioCtxRef.current = new AudioContext()
-      analyserRef.current = audioCtxRef.current.createAnalyser()
-      analyserRef.current.fftSize = 256
-      audioCtxRef.current.createMediaStreamSource(stream).connect(analyserRef.current)
-      startVolumeLoop()
-    } catch (_) {}
-  }
-
   function stopMic() {
     micStreamRef.current?.getTracks().forEach(t => t.stop())
     micStreamRef.current = null
